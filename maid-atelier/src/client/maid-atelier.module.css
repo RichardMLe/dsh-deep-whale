@@ -271,17 +271,36 @@ html[data-dsh-whale-maid-model-exit='enabled'][data-dsh-whale-model='flash-visio
   visibility: visible;
 }
 
-/* The top curtain belongs to the main pane, not to the sidebar. Its two
-   independently translated layers let the landing ornament leave upward
-   while the lace-free workspace band drops in from above. */
+/* The top curtain belongs to the main pane, not to the sidebar. Both trim
+   layers stay visible statically (trap-fix log): the workspace band fills
+   the top, the landing lace sits 50px lower, and the bow rides the container
+   itself so no view switch (hero ⇄ workspace/tablist) can drop or hide the
+   top ornaments. */
 body[data-dsh-maid-atelier] [data-skin-chrome='top-trim'] {
   position: absolute;
   inset: 0 0 auto 0;
   z-index: 20;
-  height: 76px;
+  height: 110px;
   overflow: hidden;
   pointer-events: none;
   contain: paint;
+}
+
+/* The bow moved from the landing layer to the container: it stays visible in
+   the workspace/tablist view and clears the static lace below it. */
+body[data-dsh-maid-atelier] [data-skin-chrome='top-trim']::after {
+  content: '';
+  position: absolute;
+  /* ConversationRoot reserves DSH's stable 8px scrollbar gutter. Center the
+     ornaments on that content box, the same axis as the title and composer. */
+  left: calc((100% - 8px) / 2);
+  top: 49px;
+  z-index: 2;
+  width: 80px;
+  height: 42px;
+  transform: translateX(-50%);
+  background: var(--maid-bow-art) center / contain no-repeat;
+  filter: drop-shadow(0 3px 6px rgba(4, 11, 35, 0.32));
 }
 
 body[data-dsh-maid-atelier] [data-skin-trim-layer] {
@@ -295,7 +314,8 @@ body[data-dsh-maid-atelier] [data-skin-trim-layer] {
 body[data-dsh-maid-atelier] [data-skin-trim-layer='landing'] {
   height: 48px;
   background: var(--maid-top-trim-art) left -2px / auto 51px repeat-x;
-  transform: translateY(0);
+  transform: translateY(50px);
+  z-index: 1;
 }
 
 /* At the expanded scale, the source's white embroidery starts below this
@@ -303,36 +323,13 @@ body[data-dsh-maid-atelier] [data-skin-trim-layer='landing'] {
 body[data-dsh-maid-atelier] [data-skin-trim-layer='workspace'] {
   height: 76px;
   background: var(--maid-top-trim-art) left -4px / auto 149px repeat-x;
-  transform: translateY(-100%);
-}
-
-body[data-dsh-maid-atelier][data-maid-workspace]
-  [data-skin-trim-layer='landing'] {
-  transform: translateY(-100%);
-}
-
-body[data-dsh-maid-atelier][data-maid-workspace]
-  [data-skin-trim-layer='workspace'] {
   transform: translateY(0);
+  z-index: 0;
 }
 
 body[data-dsh-maid-atelier][data-maid-composer-motion]
   [data-skin-trim-layer] {
   will-change: transform;
-}
-
-body[data-dsh-maid-atelier] [data-skin-trim-layer='landing']::after {
-  content: '';
-  position: absolute;
-  /* ConversationRoot reserves DSH's stable 8px scrollbar gutter. Center the
-     ornaments on that content box, the same axis as the title and composer. */
-  left: calc((100% - 8px) / 2);
-  top: -1px;
-  width: 80px;
-  height: 42px;
-  transform: translateX(-50%);
-  background: var(--maid-bow-art) center / contain no-repeat;
-  filter: drop-shadow(0 3px 6px rgba(4, 11, 35, 0.32));
 }
 
 /* The bottom band repeats at its native height while the center crest remains
@@ -518,13 +515,20 @@ body[data-dsh-maid-atelier] :is([data-pane='sidebar'], [class*='sidebarCol']) > 
 /* Tooltip bubbles are fixed-position siblings of the rail controls. Keeping
    them out of this stacking helper prevents their delayed mount from becoming
    another row in the sidebar's column flex layout. */
+/* Trap fix (ported from the upstream dsh-deep-whale fix log): the content
+   container sat at z-index 2, trapping the fixed cordis badge/panel (and any
+   portaled popup) inside a stacking context below the conversation header
+   (21) and trims (20) — the run card button became unclickable under the
+   skin. Lift the whole content tier to 100 (still below the settings modal
+   tier 1000 and the shell.overlay 1000) and keep the gold frame one step
+   above at 101. */
 body[data-dsh-maid-atelier] :is([data-pane='sidebar'], [class*='sidebarCol']) > div > :not(
     [data-skin-chrome='sidebar-mascot'],
     [data-skin-chrome='sidebar-corners'],
     [role='tooltip']
   ) {
   position: relative;
-  z-index: 2;
+  z-index: 100;
 }
 
 /* Wide-sidebar tooltips can mount inside the content root above. Release only
@@ -545,7 +549,7 @@ body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   --maid-sidebar-frame-line-y: 1.25px;
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 101;
   background:
     linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px top 8.875px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
     linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.875px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
@@ -737,8 +741,9 @@ body[data-dsh-maid-atelier] button[class*='newSession'] svg {
 }
 
 /* The lower sidebar keeps the U-shaped textile ornament independent from the
-   live Plan button. Its height follows the source aspect ratio, while the
-   button uses fixed raster end caps and a stretchable center slice.
+   live Plan button. Trap-fix log layout: the ornament floats above the
+   footer's top edge (fixed 72px tall, no swag-variable dependency) instead
+   of reserving flow space, so the settings button keeps its natural seat.
    Direct-child scoping: overlay surfaces (dialogs/menus) are portaled into
    this element and must not inherit the navy-and-gold foot button face. */
 body[data-dsh-maid-atelier] [data-maid-sidebar-footer] {
@@ -746,8 +751,8 @@ body[data-dsh-maid-atelier] [data-maid-sidebar-footer] {
   position: relative;
   isolation: auto;
   flex: 0 0 auto;
-  min-height: calc(var(--maid-sidebar-swag-height) + 82px);
-  padding: calc(var(--maid-sidebar-swag-height) + 2px) 18px 22px;
+  margin-top: 8px;
+  padding: 0 18px 22px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -756,9 +761,10 @@ body[data-dsh-maid-atelier] [data-maid-sidebar-footer] {
 body[data-dsh-maid-atelier] [data-maid-sidebar-footer]::before {
   content: '';
   position: absolute;
-  inset: 0 0 auto;
+  /* 下移约一行半文字，使蕾丝饰边底缘贴到下方「设置」按钮上沿 */
+  inset: -64px 0 auto;
   z-index: 0;
-  height: var(--maid-sidebar-swag-height);
+  height: 72px;
   background: var(--maid-sidebar-swag-art) center top / 100% 100% no-repeat;
   pointer-events: none;
   filter:
@@ -766,6 +772,28 @@ body[data-dsh-maid-atelier] [data-maid-sidebar-footer]::before {
     saturate(1.04)
     contrast(1.04)
     drop-shadow(0 4px 9px rgba(2, 8, 28, 0.26));
+}
+
+/* 工作区会话列表底部净空 + 渐隐遮罩：蕾丝饰边悬浮在列表底部上方（约 56px
+   伸出区）。padding 让滚到底时最后一行停在饰边之上；遮罩让滚动过程中进入
+   底部 72px 的文字提前淡出，任何时刻都不会从饰边的弯曲空隙中露出来。
+   仅宽/窄模式生效；rail 模式饰边隐藏，无需净空与遮罩。 */
+body[data-dsh-maid-atelier]:not([data-maid-sidebar-size='rail'])
+  :is([data-pane='sidebar'], [class*='sidebarCol'])
+  [role='tree'] {
+  padding-bottom: 72px;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 72px),
+    transparent calc(100% - 28px)
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 calc(100% - 72px),
+    transparent calc(100% - 28px)
+  );
 }
 
 body[data-dsh-maid-atelier]
@@ -946,13 +974,14 @@ body[data-dsh-maid-atelier][data-maid-sidebar-size='rail']
 }
 
 /* Cordis mounts its fixed panel inside the sidebar content root instead of a
-   document portal. Promote that owning root while the panel is open so it
-   follows the same overlay tier as portalled menus and dialogs. */
+   document portal. With the trap fix the owning root's resting tier is 100;
+   keep that same tier while the panel is open (a lower value here would
+   demote the open panel back under the conversation chrome). */
 body[data-dsh-maid-atelier][data-maid-cordis-panel-open]
   :is([data-pane='sidebar'], [class*='sidebarCol'])
   > div
   > :has([data-cordis-panel]) {
-  z-index: 40;
+  z-index: 100;
 }
 
 body[data-dsh-maid-atelier]
@@ -2024,8 +2053,8 @@ body[data-dsh-maid-atelier]
   z-index: auto;
 }
 
-/* The sidebar content root normally sits at layer 2 above the mascot (the
-   `> div > :not(...)` rule above gives it position: relative + z-index: 2),
+/* The sidebar content root normally sits at layer 100 above the mascot (the
+   `> div > :not(...)` rule above gives it position: relative + z-index: 100),
    which makes it a stacking context that traps the SettingsPanel's native
    modal layer (1000): under WebKit the fixed panel cannot paint out of it at
    all (#40), and under Blink it loses to the conversation header and trims
@@ -2203,7 +2232,11 @@ body[data-dsh-maid-atelier][data-maid-composer-motion]
 body[data-dsh-maid-atelier] [data-composer-card]::after {
   content: '';
   position: absolute;
-  inset: 0 -0.52% -2%;
+  /* 底缘对齐框架素材的内填条上缘：border-image 底片 115px 映射到 52px 边框，
+     不透明内填区距图底 9~16 行 → 绘制坐标 = 卡片下缘 +7px ~ +14px。
+     背景板下缘固定 -7px 与之无缝对接（原 -2% 是相对值，随卡高变化，
+     在较高卡片上会与框架内填条之间露出 1px 空隙）。 */
+  inset: 0 -0.52% -7px;
   z-index: -1;
   border-radius: 38px;
   background: inherit;
@@ -2234,9 +2267,10 @@ body[data-dsh-maid-atelier] [data-composer-card] textarea {
 }
 
 /* The navy caret disappears against the dark composer card (≈2:1 contrast);
-   the light periwinkle keeps the caret legible on the night palette. */
+   a pure white caret keeps the typing position legible on the night palette
+   (trap-fix log: dark mode caret → #fff). */
 body[data-dsh-maid-atelier][data-ds-dark-theme] [data-composer-card] textarea {
-  caret-color: #bcd2ff;
+  caret-color: #fff;
 }
 
 /* The raster extends below the naturally sized active card. Reserve that
@@ -2245,6 +2279,9 @@ body[data-dsh-maid-atelier] [data-phase='active'] [data-composer-card]:has(+ *) 
   margin-block-end: 12px;
 }
 
+/* 统计行（composer.dock：位于输入卡下方的会话统计行）→ 恢复半透明遮罩（用户确认保留）。
+   对话不再透出：由下方 [data-chat-flow] 的底部透明遮罩负责（文字/气泡背景一并渐隐），
+   遮罩区下透出的是皮肤画作而不是对话。 */
 body[data-dsh-maid-atelier]:not([data-ds-dark-theme])
   [data-slot='conversation.composer.dock'] > * {
   color: #4a5d82;
@@ -2280,6 +2317,10 @@ body[data-dsh-maid-atelier][data-ds-dark-theme]
   [data-slot='conversation.composer.dock'] > * [class*='sep'] {
   color: rgba(174, 189, 222, 0.5);
 }
+
+/* 会话流底部透明遮罩：由 bottom-veil.ts 以滚动锚定的内联 mask-image 实现，
+ * 固定罩住「输入框下缘至屏幕底端」这段区域；此处不再放静态规则（静态 mask
+ * 只能锚在消息行末尾，不是用户要的位置）。 */
 
 /* ChatView exposes data-chat-flow in every loading and content state. Give
    Trajectory, Timeline, and other inspect-only views the full canvas while

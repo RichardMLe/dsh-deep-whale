@@ -37,6 +37,7 @@ import { installMaidComposerCapsule } from './composer-capsule.ts'
 import { installMaidComposerScroll } from './composer-scroll.ts'
 import { installMaidCustomization } from './customization.ts'
 import { installMaidTableCards } from './table-card.ts'
+import { installMaidBottomVeil } from './bottom-veil.ts'
 
 const SKIN_TITLE = '深海女仆工坊 · DeepSeek Harness'
 const SKIN_OWNER = 'maid-atelier'
@@ -215,6 +216,8 @@ function hasAcceleratedWebGL(): boolean {
     try {
       const context = canvas.getContext(kind, options)
       if (context === null) continue
+      // 探测自毁的上下文丢失事件是预期行为：拦截默认日志，避免控制台噪音。
+      canvas.addEventListener('webglcontextlost', (event) => event.preventDefault(), { once: true })
       context.getExtension('WEBGL_lose_context')?.loseContext()
       return true
     } catch {
@@ -437,6 +440,7 @@ export function apply(ctx: Context): void {
     }
     disposeMaidComposerCapsule()
     disposeMaidComposerScroll()
+    disposeMaidBottomVeil()
     disposeMaidTableCards()
     if (composerMotionTimer !== undefined) clearTimeout(composerMotionTimer)
     if (viewportResizeTimer !== undefined) clearTimeout(viewportResizeTimer)
@@ -506,6 +510,7 @@ export function apply(ctx: Context): void {
   // capsule collapses the empty unfocused card, scroll fades it on scroll-up.
   const disposeMaidComposerCapsule = installMaidComposerCapsule(body)
   const disposeMaidComposerScroll = installMaidComposerScroll(body)
+  const disposeMaidBottomVeil = installMaidBottomVeil(body)
   disposeMaidTableCards = installMaidTableCards(ctx).dispose
   body.style.setProperty('--maid-top-trim-art', `url(${MAID_ATELIER_TOP_TRIM_TILE})`)
   body.style.setProperty('--maid-bottom-trim-art', `url(${MAID_ATELIER_BOTTOM_TRIM_TILE})`)
@@ -614,12 +619,15 @@ export function apply(ctx: Context): void {
     else delete body.dataset.maidSidebarCompact
   }
 
+  // Trap-fix log: no longer zeroes the width while the sidebar is briefly
+  // unmounted — the 280px default keeps the top-trim/ribbon alignment and
+  // the bow centering stable across mount transitions.
   const clearSidebarWidth = (): void => {
-    widthRule.style.setProperty('--maid-sidebar-width', '0px')
-    widthRule.style.setProperty('--maid-sidebar-swag-height', '54px')
-    widthRule.style.setProperty('--maid-sidebar-mascot-width', '0px')
-    body.dataset.maidSidebarSize = 'rail'
-    body.dataset.maidSidebarCompact = ''
+    widthRule.style.setProperty('--maid-sidebar-width', '280px')
+    widthRule.style.setProperty('--maid-sidebar-swag-height', '72.1px')
+    widthRule.style.setProperty('--maid-sidebar-mascot-width', '229.6px')
+    body.dataset.maidSidebarSize = 'wide'
+    delete body.dataset.maidSidebarCompact
   }
 
   const syncProjectedState = (): void => {

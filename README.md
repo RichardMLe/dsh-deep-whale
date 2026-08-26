@@ -1,3 +1,48 @@
+# dsh-deep-whale（本 Fork 修复版）
+
+> 基于 [Small-tailqwq/dsh-deep-whale](https://github.com/Small-tailqwq/dsh-deep-whale) 的修复版。
+> 许可证保持 **CC-BY-NC-SA-4.0** 不变；原作者署名与原始 README 请见下方（原 README 内容）。
+
+女仆主题的 DSH Web 皮肤合集（maid-atelier / orca-link / skin-manager）。
+本 fork 针对 maid-atelier 皮肤修复了若干影响观感的 bug，其余皮肤保持原样。
+
+## 本 Fork 修复的问题（maid-atelier 皮肤）
+
+- **统计行透出对话**：输入框下方的会话统计行不再透出背后的对话内容——
+  底部遮罩改为**滚动锚定**实现（新增 `bottom-veil.ts`），固定罩住「输入框下缘至屏幕底端」这段区域，
+  与消息行滚动位置无关，滚动中也不会先露出内容再渐隐；
+- **遮罩滞后一帧**：滚动时遮罩同步应用（不再经过 rAF 合并），跟随零延迟；
+- **输入框 1px 空隙**：输入框背景板下缘与金色外框的内填条精确对齐
+  （背景板 inset 底缘由相对值 `-2%` 改为固定 `-7px`，不再随卡片高度变化出现缝隙）；
+- **侧栏层级陷阱**：侧栏内容层 z-index 2 → 100（金框 101），run card 等固定面板
+  不再被对话头部/顶部饰件压住，按钮恢复可点击；cordis 面板打开时层级同步；
+- **顶部饰件掉落**：hero ⇄ 工作区切换不再隐藏顶部蕾丝与蝴蝶结——
+  两层饰件静态化、蝴蝶结移至容器常显；
+- **侧栏宽度抖动**：挂载过渡期间不再清零宽度（280px 宽布局常驻），
+  顶部饰件与蝴蝶结对中稳定；
+- **侧栏底部蕾丝饰边**：饰边改为悬浮布局（固定 72px），会话列表底部加净空 + 渐隐遮罩，
+  滚动时文字不再从饰边弯曲空隙中露出来，设置按钮回归自然位置；
+- **暗色模式光标**：输入光标改为纯白，在深色卡片上清晰可见；
+- **控制台噪音**：WebGL 探测自毁的 contextlost 日志不再刷屏。
+
+## 安装
+
+```bash
+dsh plugin --profile web add github:RichardMLe/dsh-deep-whale#main
+```
+
+安装后重启 web 服务生效。
+
+## 许可与署名
+
+- 全部内容依 **CC-BY-NC-SA-4.0**（署名—非商业性使用—相同方式共享）；
+- 原作者：Small-tailqwq（https://github.com/Small-tailqwq/dsh-deep-whale）；
+- 完整许可证文本见 LICENSE，原 README 见 README.original.md（或本文件下方）。
+
+---
+
+（以下为原仓库 README 内容，保持不变）
+
 # dsh-deep-whale · 鲸鱼娘皮肤系列
 
 **[简体中文](README.md)** · [English](README.en.md)
