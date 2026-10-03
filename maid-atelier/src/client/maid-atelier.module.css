@@ -549,9 +549,9 @@ body[data-dsh-maid-atelier]
 /* A fixed-size raster corner keeps the original curl detail intact while the
    straight frame segments remain free to grow with the resizable sidebar. */
 /* 2026-10-03 主人实测:四角装饰线与直线段不对齐、且四周线粗 1px。
-   素材实测(1254px 图缩到 130px 渲染):线宽 ≈0.73~0.83px;线宽取整 1px 后,
-   主人逐边校准位置——上 9px(完全吻合)、下 8px、左 9px、右 9px。
-   (角饰贴图经翻转复用,四条边的落点并不对称,故四值不同。) */
+   素材实测(1254px 图缩到 130px 渲染):角饰线宽 ≈0.73~0.83px → 线宽取整 1px。
+   位置:上 9px(完全吻合);下/左/右 经主人目视校准先试 1px 偏移(过头),
+   最终取**半像素** 8.5px。半像素在此是有意为之——按实际观感对齐优先于"取整消锯齿"。 */
 body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   --maid-sidebar-frame-line-x: 1px;
   --maid-sidebar-frame-line-y: 1px;
@@ -560,9 +560,9 @@ body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   z-index: 101;
   background:
     linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
-    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
-    linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 9px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat,
-    linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) right 9px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat;
+    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.5px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
+    linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat,
+    linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) right 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat;
   pointer-events: none;
 }
 
