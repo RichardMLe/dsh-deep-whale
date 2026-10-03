@@ -551,19 +551,23 @@ body[data-dsh-maid-atelier]
 /* 2026-10-03 主人逐边亚像素标定(角饰线宽实测 ≈0.73~0.83px):
    ① 竖线共同宽度 1px → 0.75px:左线"右边收 0.25"、右线"左边收 0.25"同时达成;
    ② 左线 left 8.5px(左边不动);右线再整体右移 0.25 → right 8.25px;
-   ③ 上下横线共用同一宽度 1px(必然等宽、等长)。下方角饰为上方贴图垂直翻转,
-      理论对称解为 bottom 9px;下方两角阴影补偿(见 [data-skin-corner] 规则)改变了
-      观感后,主人目视二分收敛:8.75(上超)→ 8.5(下超)→ 8.6(下超)→ 8.7(上超)
-      → **8.65**(0.05 档中点,收敛值)。 */
+   ③ 下线位置目视二分收敛到 8.6~8.7 区间(8.6/8.65 下侧超,8.7/8.75 上侧超),
+      再细已无意义——根因是 **DPR 1.5**:1 CSS px = 1.5 设备像素,1px 的线永远
+      跨在两行上,相位一变就"上亮"或"下亮"(同一根线、同一墨量重新分配)。
+      修法:把线的厚度取成**整数个设备像素**——1 设备像素 = 0.667 CSS px。
+      这样渲染恒定对称(1 行满格,或 2 行各半),不再是单侧偏置;且 0.667px
+      正与角饰贴图的实测线宽(≈0.73~0.83px)吻合。
+      上线已确认吻合,故只给下线单独一个厚度变量,不动上线。 */
 body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   --maid-sidebar-frame-line-x: 0.75px;
   --maid-sidebar-frame-line-y: 1px;
+  --maid-sidebar-frame-line-y-bottom: 0.667px;
   position: absolute;
   inset: 0;
   z-index: 101;
   background:
     linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
-    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.65px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
+    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.65px / calc(100% - 124px) var(--maid-sidebar-frame-line-y-bottom) no-repeat,
     linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat,
     linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat;
   pointer-events: none;
