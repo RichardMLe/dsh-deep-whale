@@ -592,12 +592,18 @@ body[data-dsh-maid-atelier] [data-skin-corner='bottom-right'] {
   right: 1px;
   bottom: 1px;
   transform: scaleY(-1);
+  /* 2026-10-03 主人观察:下方线与四角对不齐,疑为阴影方向。
+     filter 的输出会随 transform 一起翻转——下方两角被 scaleY(-1)/scale(-1) 翻转后,
+     原本朝下的投影变成朝上(压进框内),四角明暗方向不一致。此处反向补偿,
+     使屏幕上四角阴影统一朝下(直线段没有阴影,故差异只在角上显现)。 */
+  filter: drop-shadow(0 -1px 1px rgba(2, 7, 24, 0.42));
 }
 
 body[data-dsh-maid-atelier] [data-skin-corner='bottom-left'] {
   bottom: 1px;
   left: 1px;
   transform: scale(-1);
+  filter: drop-shadow(0 -1px 1px rgba(2, 7, 24, 0.42));
 }
 
 body[data-dsh-maid-atelier] :is([data-pane='sidebar'], [class*='sidebarCol']) [class*='fade'] {
