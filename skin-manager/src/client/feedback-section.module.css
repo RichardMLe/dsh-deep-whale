@@ -1,0 +1,24 @@
+/* 意见反馈设置区块(2026-10-02):轻量只读面板,与官方设置区块视觉同构。 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+}
+.desc {
+  margin: 0;
+  font: var(--dsw-font-sm-14);
+  color: var(--dsw-alias-label-secondary);
+}
+.button {
+  align-self: flex-start;
+  padding: 6px 18px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  background: var(--dsw-alias-button-elevated-fill);
+  color: var(--dsw-alias-label-primary);
+  cursor: pointer;
+}
+.button:hover {
+  background: var(--dsw-alias-button-floating-hover);
+}

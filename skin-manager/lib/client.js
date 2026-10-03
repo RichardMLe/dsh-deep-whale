@@ -10,177 +10,14 @@ window.__ModuleLoader__.load({
 		/** Same-origin host route used for catalog discovery and activation. */
 		const SKIN_MANAGER_ROUTE = "/api/dsh/skins";
 		//#endregion
-		//#region src/client/locale.ts
-		/**
-		* Host-language following for the manager surface. Same heuristic as the
-		* orca-link pricing light: `document.documentElement.lang` first (the host
-		* repoints it on every locale switch), `navigator.language` as fallback,
-		* and any `zh*` tag counts as Chinese. A single shared `lang` observer keeps
-		* every subscribed component one mutation away from a re-render, and the
-		* observer is dropped as soon as the last subscriber unmounts.
-		*/
-		function detectUiLang() {
-			return (document.documentElement.lang || window.navigator.language || "en").toLowerCase().startsWith("zh") ? "zh" : "en";
-		}
-		const listeners = /* @__PURE__ */ new Set();
-		let observer = null;
-		let lastNotified;
-		function refresh() {
-			const next = detectUiLang();
-			if (next === lastNotified) return;
-			lastNotified = next;
-			for (const listener of listeners) listener();
-		}
-		/**
-		* getSnapshot for useSyncExternalStore. The value is a string primitive read
-		* live from the document, so successive calls are `Object.is`-stable for as
-		* long as the host locale has not actually changed.
-		*/
-		function uiLangSnapshot() {
-			return detectUiLang();
-		}
-		/** Settings-section markup renders through getServerSnapshot; node-side calls have no DOM. */
-		function serverUiLang() {
-			try {
-				return detectUiLang();
-			} catch {
-				return "zh";
-			}
-		}
-		function subscribeUiLang(listener) {
-			listeners.add(listener);
-			if (observer === null) {
-				lastNotified = detectUiLang();
-				observer = new MutationObserver(refresh);
-				observer.observe(document.documentElement, {
-					attributes: true,
-					attributeFilter: ["lang"]
-				});
-			}
-			return () => {
-				listeners.delete(listener);
-				if (listeners.size === 0 && observer !== null) {
-					observer.disconnect();
-					observer = null;
-				}
-			};
-		}
-		function useUiLang() {
-			return (0, react.useSyncExternalStore)(subscribeUiLang, uiLangSnapshot, serverUiLang);
-		}
-		const zhCopy = {
-			headerTitle: "皮肤管理",
-			headerIntro: "这里会发现当前 Web profile 中已安装的皮肤。激活由管理器统一处理；详细配置由皮肤按通用协议自行声明并负责应用。每个皮肤下方显示本地提交或构建指纹；「检查更新」只比较官方仓库的构建结果，不会改动你的本地文件。",
-			installedTitle: "已安装皮肤",
-			checking: "检查中…",
-			checkUpdates: "检查更新",
-			officialName: "官方默认",
-			officialDescription: "不启用任何皮肤",
-			stateCurrent: "当前",
-			stateSwitching: "切换中",
-			stateSwitch: "切换",
-			compatibility: (version) => `已适配 DSH ${version}`,
-			versionUnread: "尚未读取",
-			versionUnavailable: "版本信息不可用",
-			localCommit: "本地提交",
-			localBuild: "本地构建",
-			gitHashTitle: (hash, date) => `完整提交 ${hash}\n日期 ${date ?? "未知"}`,
-			buildHashTitle: (hash) => `完整构建指纹 ${hash}`,
-			notCompared: "未对比",
-			upToDate: (short) => `与远端一致（${short}）`,
-			updateAvailable: (short, date, message) => `仓库有新构建：${short} · ${date} · ${message}`,
-			localAhead: (short) => `本地领先（远端 ${short}）`,
-			diverged: (short) => `与远端分叉（远端 ${short}）`,
-			unknownUpdate: "无法判断更新",
-			localDirty: "本地有未提交修改",
-			noSkins: "当前 profile 未发现皮肤包；安装本仓库皮肤后可回到这里激活。",
-			copiedOk: "完整版本标识已复制到剪贴板。",
-			copyFailed: "复制失败：浏览器拒绝了剪贴板访问。",
-			loadingSkins: "正在读取已安装皮肤…",
-			actionFailed: (message) => `操作失败：${message}`,
-			settingsTitle: "详细配置",
-			noSettings: "当前皮肤尚未暴露可配置项；仍可在上方正常激活和切换。",
-			schedulePolicy: "规则方式",
-			policyHideInRanges: "这些时段隐藏，其余时间显示",
-			policyShowInRanges: "这些时段显示，其余时间隐藏",
-			rangeStartAria: (index) => `时段 ${index} 开始`,
-			rangeEndAria: (index) => `时段 ${index} 结束`,
-			hourAria: (label) => `${label} 时`,
-			minuteAria: (label) => `${label} 分`,
-			rangeTo: "至",
-			removeRange: "删除",
-			addRange: "添加时间段",
-			scheduleHint: "使用本机时间；支持跨午夜，例如 22:00 至 07:00。时间段按“开始包含、结束不包含”计算。"
-		};
-		const enCopy = {
-			headerTitle: "Skin Management",
-			headerIntro: "This page discovers the skins installed in the current Web profile. Activation is handled by the manager; detailed options are declared and applied by each skin over a shared protocol. Every skin lists its local commit or build fingerprint below. \"Check updates\" only compares against the official repository's build results and never touches your local files.",
-			installedTitle: "Installed Skins",
-			checking: "Checking…",
-			checkUpdates: "Check updates",
-			officialName: "Official Default",
-			officialDescription: "No skin applied",
-			stateCurrent: "Current",
-			stateSwitching: "Switching",
-			stateSwitch: "Switch",
-			compatibility: (version) => `Verified on DSH ${version}`,
-			versionUnread: "Not read yet",
-			versionUnavailable: "Version info unavailable",
-			localCommit: "Local commit",
-			localBuild: "Local build",
-			gitHashTitle: (hash, date) => `Full commit ${hash}\nDate ${date ?? "unknown"}`,
-			buildHashTitle: (hash) => `Full build fingerprint ${hash}`,
-			notCompared: "Not compared",
-			upToDate: (short) => `Up to date (${short})`,
-			updateAvailable: (short, date, message) => `New build available: ${short} · ${date} · ${message}`,
-			localAhead: (short) => `Local ahead (remote ${short})`,
-			diverged: (short) => `Diverged (remote ${short})`,
-			unknownUpdate: "Cannot determine updates",
-			localDirty: "Local changes present",
-			noSkins: "No skin packages found in this profile; install one of this repository's skins and return here to activate it.",
-			copiedOk: "Full version identifier copied to the clipboard.",
-			copyFailed: "Copy failed: the browser denied clipboard access.",
-			loadingSkins: "Reading installed skins…",
-			actionFailed: (message) => `Operation failed: ${message}`,
-			settingsTitle: "Detailed Options",
-			noSettings: "The active skin exposes no configurable options yet; activation and switching above still work normally.",
-			schedulePolicy: "Rule mode",
-			policyHideInRanges: "Hide during these periods, show otherwise",
-			policyShowInRanges: "Show during these periods, hide otherwise",
-			rangeStartAria: (index) => `Period ${index} start`,
-			rangeEndAria: (index) => `Period ${index} end`,
-			hourAria: (label) => `${label} hour`,
-			minuteAria: (label) => `${label} minute`,
-			rangeTo: "to",
-			removeRange: "Remove",
-			addRange: "Add period",
-			scheduleHint: "Uses local time; crossing midnight is supported, e.g. 22:00 to 07:00. Periods are start-inclusive and end-exclusive."
-		};
-		function skinManagerCopy(lang) {
-			return lang === "zh" ? zhCopy : enCopy;
-		}
-		function definitionTitle(definition, lang) {
-			return lang === "en" ? definition.titleEn ?? definition.title : definition.title;
-		}
-		function settingLabel(setting, lang) {
-			return lang === "en" ? setting.labelEn ?? setting.label : setting.label;
-		}
-		function settingDescription(setting, lang) {
-			if (setting.description === void 0) return void 0;
-			return lang === "en" ? setting.descriptionEn ?? setting.description : setting.description;
-		}
-		function optionLabel(option, lang) {
-			return lang === "en" ? option.labelEn ?? option.label : option.label;
-		}
-		//#endregion
 		//#region \0dsh-css:../skin-manager/src/client/skin-manager.module.css.mjs
-		const css = ".orL4ja_section{color:var(--dsw-alias-label-primary);gap:14px;display:grid}.orL4ja_header h2,.orL4ja_card h3,.orL4ja_header p,.orL4ja_error{margin:0}.orL4ja_header{gap:6px;display:grid}.orL4ja_header p{color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.orL4ja_card{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:10px;gap:10px;padding:14px;display:grid}.orL4ja_card h3{font-size:14px}.orL4ja_cardHeader{justify-content:space-between;align-items:center;gap:10px;display:flex}.orL4ja_checkButton{min-height:28px;color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:6px;padding:4px 12px;font-size:12px}.orL4ja_checkButton:hover:not(:disabled){color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-brand-primary)}.orL4ja_checkButton:disabled{opacity:.55;cursor:default}.orL4ja_skinTile{align-self:start;gap:4px;min-width:0;display:grid}.orL4ja_skinGrid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-items:start;gap:8px;display:grid}.orL4ja_skinButton{width:100%}.orL4ja_defaultButton,.orL4ja_defaultActive{width:100%;min-height:44px;color:var(--dsw-alias-label-primary);border:1px dashed var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:8px;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;display:flex}.orL4ja_defaultButton>span,.orL4ja_defaultActive>span{text-align:left;gap:2px;display:grid}.orL4ja_defaultButton small,.orL4ja_defaultActive small{color:var(--dsw-alias-label-tertiary)}.orL4ja_defaultButton:disabled,.orL4ja_defaultActive:disabled{opacity:.75;cursor:default}.orL4ja_defaultActive{border-style:solid;border-color:var(--dsw-alias-brand-primary);box-shadow:inset 3px 0 var(--dsw-alias-brand-primary)}.orL4ja_defaultState{flex:none;color:var(--dsw-alias-label-secondary)!important}.orL4ja_skinButton,.orL4ja_activeSkin{min-height:58px;color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:8px;justify-items:start;gap:3px;padding:10px;display:grid}.orL4ja_activeSkin{border-color:var(--dsw-alias-brand-primary);box-shadow:inset 3px 0 var(--dsw-alias-brand-primary)}.orL4ja_skinButton small,.orL4ja_activeSkin small{color:var(--dsw-alias-label-tertiary)}.orL4ja_versionRow{flex-wrap:wrap;align-items:center;gap:3px 8px;min-height:16px;padding-inline:2px;font-size:11px;line-height:1.5;display:flex}.orL4ja_compatibility{color:var(--dsw-alias-label-tertiary);padding-inline:2px;font-size:11px}.orL4ja_versionHash{appearance:none;color:var(--dsw-alias-label-secondary);font-family:var(--ds-font-family-code,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-size:inherit;line-height:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;padding:0}.orL4ja_versionHash:hover{color:var(--dsw-alias-brand-primary)}.orL4ja_versionMuted{color:var(--dsw-alias-label-tertiary)}.orL4ja_versionOk{color:var(--dsw-alias-state-success-primary,#12a150)}.orL4ja_versionUpdate{color:var(--dsw-alias-state-warn-primary,#e08700)}.orL4ja_toggleRow,.orL4ja_selectRow,.orL4ja_sliderRow{justify-content:space-between;align-items:center;gap:12px;min-height:34px;display:flex}.orL4ja_toggleRow>span,.orL4ja_selectRow>span,.orL4ja_sliderRow>span{gap:2px;display:grid}.orL4ja_toggleRow small,.orL4ja_selectRow small,.orL4ja_sliderRow small,.orL4ja_hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}.orL4ja_toggleRow input{block-size:18px;inline-size:34px;accent-color:var(--dsw-alias-brand-primary)}.orL4ja_toggleSwitch{cursor:pointer;border-radius:999px;flex:none;justify-content:center;align-items:center;margin:-4px;padding:4px;display:inline-flex}.orL4ja_toggleSwitch input,.orL4ja_selectRow select,.orL4ja_rangeRow select{cursor:pointer}.orL4ja_selectRow select,.orL4ja_rangeRow input,.orL4ja_rangeRow select{box-sizing:border-box;min-height:30px;color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-input-major);border-radius:6px}.orL4ja_selectRow select{max-width:240px;padding-inline:8px}.orL4ja_selectRow select:disabled,.orL4ja_sliderRow input:disabled,.orL4ja_toggleRow input:disabled{opacity:.45;cursor:not-allowed}.orL4ja_sliderRow{grid-template-columns:minmax(0,1fr) auto minmax(120px,220px);align-items:center;gap:10px;min-height:40px;display:grid}.orL4ja_sliderValue{min-width:3ch;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;text-align:right}.orL4ja_sliderRow input[type=range]{-webkit-appearance:none;appearance:none;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-input-major);cursor:pointer;width:100%;height:20px;image-rendering:pixelated;border-radius:0;margin:0;padding:0}.orL4ja_sliderRow input[type=range]::-webkit-slider-runnable-track{border:1px solid var(--dsw-alias-brand-primary);background:linear-gradient(#bdf6ff,#52bce2 55%,#3716b1);border-radius:0;height:8px}.orL4ja_sliderRow input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;border:2px solid var(--dsw-alias-brand-primary);background:#ff70c8;border-radius:0;width:14px;height:22px;margin-top:-8px;box-shadow:2px 2px #5127ff59}.orL4ja_sliderRow input[type=range]::-moz-range-track{border:1px solid var(--dsw-alias-brand-primary);background:linear-gradient(#bdf6ff,#52bce2 55%,#3716b1);border-radius:0;height:8px}.orL4ja_sliderRow input[type=range]::-moz-range-thumb{border:2px solid var(--dsw-alias-brand-primary);background:#ff70c8;border-radius:0;width:10px;height:18px;box-shadow:2px 2px #5127ff59}.orL4ja_timeSelect{align-items:center;gap:4px;width:100%;min-width:0;display:inline-flex}.orL4ja_timeSelect select{text-align:center;width:100%;min-width:0;max-width:none;padding-inline:6px}.orL4ja_timeColon{color:var(--dsw-alias-label-tertiary);flex:none}.orL4ja_schedule{gap:8px;display:grid}.orL4ja_scheduleDetails{border-left:2px solid var(--dsw-alias-border-l2);gap:8px;margin-left:12px;padding:10px;display:grid}.orL4ja_rangeList{gap:6px;display:grid}.orL4ja_rangeRow{color:var(--dsw-alias-label-secondary);grid-template-columns:minmax(100px,1fr) auto minmax(100px,1fr) auto;align-items:center;gap:8px;font-size:12px;display:grid}.orL4ja_rangeRow input{width:100%;padding-inline:7px}.orL4ja_rangeRow button,.orL4ja_addRange{min-height:30px;color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:6px;padding:4px 9px}.orL4ja_addRange{justify-self:start}.orL4ja_error{color:var(--dsw-alias-state-danger,#c43d3d);font-size:12px}@media (width<=720px){.orL4ja_skinGrid{grid-template-columns:1fr}.orL4ja_rangeRow{grid-template-columns:1fr auto 1fr}.orL4ja_rangeRow button{grid-column:1/-1;justify-self:end}}";
-		const tagId = "@dsh-external/dsh-client-ui-skin-deep-whale-manager/skin-manager.module.css";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+		const css$1 = ".orL4ja_section{color:var(--dsw-alias-label-primary);gap:14px;display:grid}.orL4ja_header h2,.orL4ja_card h3,.orL4ja_header p,.orL4ja_error{margin:0}.orL4ja_header{gap:6px;display:grid}.orL4ja_header p{color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1.6}.orL4ja_card{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:10px;gap:10px;padding:14px;display:grid}.orL4ja_card h3{font-size:14px}.orL4ja_cardHeader{justify-content:space-between;align-items:center;gap:10px;display:flex}.orL4ja_checkButton{min-height:28px;color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:6px;padding:4px 12px;font-size:12px}.orL4ja_checkButton:hover:not(:disabled){color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-brand-primary)}.orL4ja_checkButton:disabled{opacity:.55;cursor:default}.orL4ja_skinTile{align-self:start;gap:4px;min-width:0;display:grid}.orL4ja_skinGrid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));align-items:start;gap:8px;display:grid}.orL4ja_skinButton{width:100%}.orL4ja_defaultButton,.orL4ja_defaultActive{width:100%;min-height:44px;color:var(--dsw-alias-label-primary);border:1px dashed var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:8px;justify-content:space-between;align-items:center;gap:12px;padding:8px 12px;display:flex}.orL4ja_defaultButton>span,.orL4ja_defaultActive>span{text-align:left;gap:2px;display:grid}.orL4ja_defaultButton small,.orL4ja_defaultActive small{color:var(--dsw-alias-label-tertiary)}.orL4ja_defaultButton:disabled,.orL4ja_defaultActive:disabled{opacity:.75;cursor:default}.orL4ja_defaultActive{border-style:solid;border-color:var(--dsw-alias-brand-primary);box-shadow:inset 3px 0 var(--dsw-alias-brand-primary)}.orL4ja_defaultState{flex:none;color:var(--dsw-alias-label-secondary)!important}.orL4ja_skinButton,.orL4ja_activeSkin{min-height:58px;color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:8px;justify-items:start;gap:3px;padding:10px;display:grid}.orL4ja_activeSkin{border-color:var(--dsw-alias-brand-primary);box-shadow:inset 3px 0 var(--dsw-alias-brand-primary)}.orL4ja_skinButton small,.orL4ja_activeSkin small{color:var(--dsw-alias-label-tertiary)}.orL4ja_versionRow{flex-wrap:wrap;align-items:center;gap:3px 8px;min-height:16px;padding-inline:2px;font-size:11px;line-height:1.5;display:flex}.orL4ja_compatibility{color:var(--dsw-alias-label-tertiary);padding-inline:2px;font-size:11px}.orL4ja_versionHash{appearance:none;color:var(--dsw-alias-label-secondary);font-family:var(--ds-font-family-code,ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);font-size:inherit;line-height:inherit;cursor:pointer;white-space:nowrap;background:0 0;border:0;padding:0}.orL4ja_versionHash:hover{color:var(--dsw-alias-brand-primary)}.orL4ja_versionMuted{color:var(--dsw-alias-label-tertiary)}.orL4ja_versionOk{color:var(--dsw-alias-state-success-primary,#12a150)}.orL4ja_versionUpdate{color:var(--dsw-alias-state-warn-primary,#e08700)}.orL4ja_toggleRow,.orL4ja_selectRow{justify-content:space-between;align-items:center;gap:12px;min-height:34px;display:flex}.orL4ja_toggleRow>span,.orL4ja_selectRow>span{gap:2px;display:grid}.orL4ja_toggleRow small,.orL4ja_selectRow small,.orL4ja_hint{color:var(--dsw-alias-label-tertiary);font-size:12px;line-height:1.5}.orL4ja_toggleRow input{block-size:18px;inline-size:34px;accent-color:var(--dsw-alias-brand-primary)}.orL4ja_toggleSwitch{cursor:pointer;border-radius:999px;flex:none;justify-content:center;align-items:center;margin:-4px;padding:4px;display:inline-flex}.orL4ja_toggleSwitch input,.orL4ja_selectRow select,.orL4ja_rangeRow select{cursor:pointer}.orL4ja_selectRow select,.orL4ja_rangeRow input,.orL4ja_rangeRow select{box-sizing:border-box;min-height:30px;color:var(--dsw-alias-label-primary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-specific-input-major);border-radius:6px}.orL4ja_selectRow select{max-width:240px;padding-inline:8px}.orL4ja_timeSelect{align-items:center;gap:4px;width:100%;min-width:0;display:inline-flex}.orL4ja_timeSelect select{text-align:center;width:100%;min-width:0;max-width:none;padding-inline:6px}.orL4ja_timeColon{color:var(--dsw-alias-label-tertiary);flex:none}.orL4ja_schedule{gap:8px;display:grid}.orL4ja_scheduleDetails{border-left:2px solid var(--dsw-alias-border-l2);gap:8px;margin-left:12px;padding:10px;display:grid}.orL4ja_rangeList{gap:6px;display:grid}.orL4ja_rangeRow{color:var(--dsw-alias-label-secondary);grid-template-columns:minmax(100px,1fr) auto minmax(100px,1fr) auto;align-items:center;gap:8px;font-size:12px;display:grid}.orL4ja_rangeRow input{width:100%;padding-inline:7px}.orL4ja_rangeRow button,.orL4ja_addRange{min-height:30px;color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;border-radius:6px;padding:4px 9px}.orL4ja_addRange{justify-self:start}.orL4ja_error{color:var(--dsw-alias-state-danger,#c43d3d);font-size:12px}@media (width<=720px){.orL4ja_skinGrid{grid-template-columns:1fr}.orL4ja_rangeRow{grid-template-columns:1fr auto 1fr}.orL4ja_rangeRow button{grid-column:1/-1;justify-self:end}}";
+		const tagId$1 = "@dsh-external/dsh-client-ui-skin-deep-whale-manager/skin-manager.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@dsh-external/dsh-client-ui-skin-deep-whale-manager";
-			tag.dataset.pluginCss = tagId;
-			tag.textContent = css;
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
 		var skin_manager_module_css_default = {
@@ -205,8 +42,6 @@ window.__ModuleLoader__.load({
 			"skinButton": "orL4ja_skinButton",
 			"skinGrid": "orL4ja_skinGrid",
 			"skinTile": "orL4ja_skinTile",
-			"sliderRow": "orL4ja_sliderRow",
-			"sliderValue": "orL4ja_sliderValue",
 			"timeColon": "orL4ja_timeColon",
 			"timeSelect": "orL4ja_timeSelect",
 			"toggleRow": "orL4ja_toggleRow",
@@ -222,16 +57,15 @@ window.__ModuleLoader__.load({
 		const shortDate = (iso) => iso === null ? "" : iso.slice(0, 10);
 		const shortMessage = (message) => message.length > 42 ? `${message.slice(0, 42)}…` : message;
 		function VersionRow({ info, onCopied }) {
-			const copy = skinManagerCopy(useUiLang());
 			const segment = (text, className) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 				className: className ?? skin_manager_module_css_default.versionMuted,
 				children: text
 			});
 			if (info.source === "none" || info.local === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: skin_manager_module_css_default.versionRow,
-				children: segment(info.note ?? copy.versionUnavailable)
+				children: segment(info.note ?? "版本信息不可用")
 			});
-			const copyHash = async () => {
+			const copy = async () => {
 				try {
 					await navigator.clipboard?.writeText(info.local.hash);
 					onCopied(true);
@@ -246,29 +80,36 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 						type: "button",
 						className: skin_manager_module_css_default.versionHash,
-						title: info.source === "git" ? copy.gitHashTitle(info.local.hash, info.local.date) : copy.buildHashTitle(info.local.hash),
-						onClick: () => void copyHash(),
+						title: info.source === "git" ? `完整提交 ${info.local.hash}\n日期 ${info.local.date ?? "未知"}` : `完整构建指纹 ${info.local.hash}`,
+						onClick: () => void copy(),
 						children: [
-							info.source === "git" ? copy.localCommit : copy.localBuild,
+							info.source === "git" ? "本地提交" : "本地构建",
 							" ",
 							info.local.short
 						]
 					}),
-					info.remote === null && segment(info.note ?? copy.notCompared),
-					info.remote !== null && info.remote.state === "up-to-date" && remoteLatest !== null && segment(copy.upToDate(remoteLatest.short), skin_manager_module_css_default.versionOk),
-					info.remote !== null && info.remote.state === "update-available" && remoteLatest !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+					info.remote === null && segment(info.note ?? "未对比"),
+					info.remote !== null && info.remote.state === "up-to-date" && remoteLatest !== null && segment(`与远端一致（${remoteLatest.short}）`, skin_manager_module_css_default.versionOk),
+					info.remote !== null && info.remote.state === "update-available" && remoteLatest !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 						className: skin_manager_module_css_default.versionUpdate,
-						children: copy.updateAvailable(remoteLatest.short, shortDate(remoteLatest.date), shortMessage(remoteLatest.message ?? ""))
+						children: [
+							"仓库有新构建：",
+							remoteLatest.short,
+							" · ",
+							shortDate(remoteLatest.date),
+							" · ",
+							shortMessage(remoteLatest.message ?? "")
+						]
 					}) }),
-					info.remote !== null && info.remote.state === "local-ahead" && remoteLatest !== null && segment(copy.localAhead(remoteLatest.short)),
-					info.remote !== null && info.remote.state === "diverged" && remoteLatest !== null && segment(copy.diverged(remoteLatest.short)),
-					info.remote !== null && info.remote.state === "unknown" && segment(copy.unknownUpdate),
-					info.dirty && segment(copy.localDirty),
+					info.remote !== null && info.remote.state === "local-ahead" && remoteLatest !== null && segment(`本地领先（远端 ${remoteLatest.short}）`),
+					info.remote !== null && info.remote.state === "diverged" && remoteLatest !== null && segment(`与远端分叉（远端 ${remoteLatest.short}）`),
+					info.remote !== null && info.remote.state === "unknown" && segment("无法判断更新"),
+					info.dirty && segment("本地有未提交修改"),
 					info.note !== void 0 && segment(info.note)
 				]
 			});
 		}
-		function Toggle({ checked, label, description, disabled = false, onChange }) {
+		function Toggle({ checked, label, description, onChange }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: skin_manager_module_css_default.toggleRow,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label }), description && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: description })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("label", {
@@ -277,7 +118,6 @@ window.__ModuleLoader__.load({
 						type: "checkbox",
 						role: "switch",
 						checked,
-						disabled,
 						onChange: (event) => onChange(event.currentTarget.checked)
 					})
 				})]
@@ -292,7 +132,6 @@ window.__ModuleLoader__.load({
 		* list — the same customizable-select surface as the other setting rows.
 		*/
 		function TimeSelect({ label, value, onChange }) {
-			const copy = skinManagerCopy(useUiLang());
 			const [hour = "00", minute = "00"] = value.split(":");
 			const setHour = (hour) => onChange(`${hour}:${minute}`);
 			const setMinute = (minute) => onChange(`${hour}:${minute}`);
@@ -300,7 +139,7 @@ window.__ModuleLoader__.load({
 				className: skin_manager_module_css_default.timeSelect,
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
-						"aria-label": copy.hourAria(label),
+						"aria-label": `${label} 时`,
 						value: hour,
 						onChange: (event) => setHour(event.currentTarget.value),
 						children: Array.from({ length: 24 }, (_, hour) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
@@ -314,7 +153,7 @@ window.__ModuleLoader__.load({
 						children: ":"
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
-						"aria-label": copy.minuteAria(label),
+						"aria-label": `${label} 分`,
 						value: minute,
 						onChange: (event) => setMinute(event.currentTarget.value),
 						children: Array.from({ length: 60 }, (_, minute) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
@@ -326,8 +165,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function ScheduleEditor({ setting, value, onChange }) {
-			const lang = useUiLang();
-			const copy = skinManagerCopy(lang);
 			const updateRange = (index, patch) => onChange({
 				...value,
 				ranges: value.ranges.map((range, current) => current === index ? {
@@ -339,8 +176,8 @@ window.__ModuleLoader__.load({
 				className: skin_manager_module_css_default.schedule,
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Toggle, {
 					checked: value.enabled,
-					label: settingLabel(setting, lang),
-					description: settingDescription(setting, lang),
+					label: setting.label,
+					description: setting.description,
 					onChange: (enabled) => onChange({
 						...value,
 						enabled
@@ -350,7 +187,7 @@ window.__ModuleLoader__.load({
 					children: [
 						/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
 							className: skin_manager_module_css_default.selectRow,
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: copy.schedulePolicy }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "规则方式" }), /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("select", {
 								value: value.outside,
 								onChange: (event) => onChange({
 									...value,
@@ -358,10 +195,10 @@ window.__ModuleLoader__.load({
 								}),
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 									value: "visible",
-									children: copy.policyHideInRanges
+									children: "这些时段隐藏，其余时间显示"
 								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 									value: "hidden",
-									children: copy.policyShowInRanges
+									children: "这些时段显示，其余时间隐藏"
 								})]
 							})]
 						}),
@@ -371,13 +208,13 @@ window.__ModuleLoader__.load({
 								className: skin_manager_module_css_default.rangeRow,
 								children: [
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimeSelect, {
-										label: copy.rangeStartAria(index + 1),
+										label: `时段 ${index + 1} 开始`,
 										value: range.start,
 										onChange: (start) => updateRange(index, { start })
 									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: copy.rangeTo }),
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "至" }),
 									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(TimeSelect, {
-										label: copy.rangeEndAria(index + 1),
+										label: `时段 ${index + 1} 结束`,
 										value: range.end,
 										onChange: (end) => updateRange(index, { end })
 									}),
@@ -387,7 +224,7 @@ window.__ModuleLoader__.load({
 											...value,
 											ranges: value.ranges.filter((_, current) => current !== index)
 										}),
-										children: copy.removeRange
+										children: "删除"
 									})
 								]
 							}, index))
@@ -403,68 +240,33 @@ window.__ModuleLoader__.load({
 									end: "12:00"
 								}]
 							}),
-							children: copy.addRange
+							children: "添加时间段"
 						}),
 						/* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", {
 							className: skin_manager_module_css_default.hint,
-							children: copy.scheduleHint
+							children: "使用本机时间；支持跨午夜，例如 22:00 至 07:00。时间段按“开始包含、结束不包含”计算。"
 						})
 					]
 				})]
 			});
 		}
-		function RangeEditor({ setting, label, description, value, disabled = false, onChange }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-				className: skin_manager_module_css_default.sliderRow,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label }), description && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: description })] }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
-						className: skin_manager_module_css_default.sliderValue,
-						children: [value, setting.unit ?? ""]
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-						type: "range",
-						min: setting.min,
-						max: setting.max,
-						step: setting.step ?? 1,
-						value,
-						disabled,
-						"aria-label": label,
-						onChange: (event) => onChange(Number(event.currentTarget.value))
-					})
-				]
-			});
-		}
-		function SettingEditor({ setting, value, disabled = false, onChange }) {
-			const lang = useUiLang();
-			const label = settingLabel(setting, lang);
-			const description = settingDescription(setting, lang);
+		function SettingEditor({ setting, value, onChange }) {
 			if (setting.type === "boolean") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Toggle, {
 				checked: value,
-				label,
-				description,
-				disabled,
+				label: setting.label,
+				description: setting.description,
 				onChange
 			});
 			if (setting.type === "select") return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
 				className: skin_manager_module_css_default.selectRow,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label }), description && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: description })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: setting.label }), setting.description && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: setting.description })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("select", {
 					value,
-					disabled,
 					onChange: (event) => onChange(event.currentTarget.value),
 					children: setting.options.map((option) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)("option", {
 						value: option.value,
-						children: optionLabel(option, lang)
+						children: option.label
 					}, option.value))
 				})]
-			});
-			if (setting.type === "range") return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(RangeEditor, {
-				setting,
-				label,
-				description,
-				value,
-				disabled,
-				onChange
 			});
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ScheduleEditor, {
 				setting,
@@ -473,20 +275,15 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function CustomizationCard({ definition, registry }) {
-			const lang = useUiLang();
 			const values = registry.values(definition);
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 				className: skin_manager_module_css_default.card,
 				"data-skin-customization": definition.skinId,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: definitionTitle(definition, lang) }), definition.settings.map((setting) => {
-					const disabled = setting.disabledWhen !== void 0 && values[setting.disabledWhen] === true;
-					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SettingEditor, {
-						setting,
-						value: values[setting.key],
-						disabled,
-						onChange: (value) => registry.set(definition, setting.key, value)
-					}, setting.key);
-				})]
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: definition.title }), definition.settings.map((setting) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(SettingEditor, {
+					setting,
+					value: values[setting.key],
+					onChange: (value) => registry.set(definition, setting.key, value)
+				}, setting.key))]
 			});
 		}
 		/** Generic settings surface: host-discovered activation plus skin-owned declarations. */
@@ -501,8 +298,6 @@ window.__ModuleLoader__.load({
 			const [error, setError] = (0, react.useState)(null);
 			const live = (0, react.useRef)(true);
 			const copyTimer = (0, react.useRef)(void 0);
-			const lang = useUiLang();
-			const copy = skinManagerCopy(lang);
 			const current = active(catalog);
 			const currentDefinitions = definitions.filter((definition) => definition.skinId === current);
 			(0, react.useEffect)(() => {
@@ -556,19 +351,19 @@ window.__ModuleLoader__.load({
 				children: [
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("header", {
 						className: skin_manager_module_css_default.header,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", { children: copy.headerTitle }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: copy.headerIntro })]
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h2", { children: "皮肤管理" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", { children: "这里会发现当前 Web profile 中已安装的皮肤。激活由管理器统一处理；详细配置由皮肤按通用协议自行声明并负责应用。每个皮肤下方显示本地提交或构建指纹；「检查更新」只比较官方仓库的构建结果，不会改动你的本地文件。" })]
 					}),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: skin_manager_module_css_default.card,
 						children: [
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: skin_manager_module_css_default.cardHeader,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: copy.installedTitle }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: "已安装皮肤" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
 									type: "button",
 									className: skin_manager_module_css_default.checkButton,
 									disabled: loading || checking,
 									onClick: checkVersions,
-									children: checking ? copy.checking : copy.checkUpdates
+									children: checking ? "检查中…" : "检查更新"
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
@@ -576,68 +371,64 @@ window.__ModuleLoader__.load({
 								className: current === "official" ? skin_manager_module_css_default.defaultActive : skin_manager_module_css_default.defaultButton,
 								disabled: loading || switching !== null || current === "official",
 								onClick: () => choose("official"),
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: copy.officialName }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: copy.officialDescription })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", { children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: "官方默认" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: "不启用任何皮肤" })] }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", {
 									className: skin_manager_module_css_default.defaultState,
-									children: current === "official" ? copy.stateCurrent : switching === "official" ? copy.stateSwitching : copy.stateSwitch
+									children: current === "official" ? "当前" : switching === "official" ? "切换中" : "切换"
 								})]
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 								className: skin_manager_module_css_default.skinGrid,
-								children: catalog.map((skin) => {
-									const primaryName = lang === "en" && skin.nameEn !== void 0 ? skin.nameEn : skin.name;
-									const secondaryName = lang === "en" ? skin.nameEn !== void 0 ? skin.name : void 0 : skin.nameEn;
-									return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
-										className: skin_manager_module_css_default.skinTile,
-										children: [
-											/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-												type: "button",
-												className: current === skin.id ? skin_manager_module_css_default.activeSkin : skin_manager_module_css_default.skinButton,
-												disabled: loading || switching !== null || current === skin.id,
-												onClick: () => choose(skin.id),
-												children: [
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: primaryName }),
-													secondaryName !== void 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: secondaryName }),
-													/* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: current === skin.id ? copy.stateCurrent : switching === skin.id ? copy.stateSwitching : copy.stateSwitch })
-												]
-											}),
-											skin.dshCompatibility && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", {
-												className: skin_manager_module_css_default.compatibility,
-												children: copy.compatibility(skin.dshCompatibility)
-											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(VersionRow, {
-												info: versions.get(skin.id) ?? {
-													id: skin.id,
-													source: "none",
-													local: null,
-													remote: null,
-													dirty: false,
-													note: copy.versionUnread
-												},
-												onCopied: announceCopied
-											})
-										]
-									}, skin.id);
-								})
+								children: catalog.map((skin) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+									className: skin_manager_module_css_default.skinTile,
+									children: [
+										/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
+											type: "button",
+											className: current === skin.id ? skin_manager_module_css_default.activeSkin : skin_manager_module_css_default.skinButton,
+											disabled: loading || switching !== null || current === skin.id,
+											onClick: () => choose(skin.id),
+											children: [
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: skin.name }),
+												skin.nameEn && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: skin.nameEn }),
+												/* @__PURE__ */ (0, react_jsx_runtime.jsx)("small", { children: current === skin.id ? "当前" : switching === skin.id ? "切换中" : "切换" })
+											]
+										}),
+										skin.dshCompatibility && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("small", {
+											className: skin_manager_module_css_default.compatibility,
+											children: ["已适配 DSH ", skin.dshCompatibility]
+										}),
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(VersionRow, {
+											info: versions.get(skin.id) ?? {
+												id: skin.id,
+												source: "none",
+												local: null,
+												remote: null,
+												dirty: false,
+												note: "尚未读取"
+											},
+											onCopied: announceCopied
+										})
+									]
+								}, skin.id))
 							}),
 							catalog.length === 0 && !loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: skin_manager_module_css_default.hint,
-								children: copy.noSkins
+								children: "当前 profile 未发现皮肤包；安装本仓库皮肤后可回到这里激活。"
 							}),
 							copied === "ok" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: skin_manager_module_css_default.hint,
-								children: copy.copiedOk
+								children: "完整版本标识已复制到剪贴板。"
 							}),
 							copied === "fail" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: skin_manager_module_css_default.error,
-								children: copy.copyFailed
+								children: "复制失败：浏览器拒绝了剪贴板访问。"
 							}),
 							loading && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 								className: skin_manager_module_css_default.hint,
-								children: copy.loadingSkins
+								children: "正在读取已安装皮肤…"
 							}),
-							error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+							error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("p", {
 								className: skin_manager_module_css_default.error,
-								children: copy.actionFailed(error)
+								children: ["操作失败：", error]
 							})
 						]
 					}),
@@ -647,9 +438,9 @@ window.__ModuleLoader__.load({
 					}, definition.skinId)),
 					!loading && current !== "official" && current !== "unknown" && currentDefinitions.length === 0 && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("section", {
 						className: skin_manager_module_css_default.card,
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: copy.settingsTitle }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", { children: "详细配置" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
 							className: skin_manager_module_css_default.hint,
-							children: copy.noSettings
+							children: "当前皮肤尚未暴露可配置项；仍可在上方正常激活和切换。"
 						})]
 					})
 				]
@@ -697,6 +488,46 @@ window.__ModuleLoader__.load({
 			const result = await response.json();
 			if (!response.ok || result.ok !== true) throw new Error(result.error ?? `HTTP ${response.status}`);
 			window.setTimeout(() => window.location.reload(), 1200);
+		}
+		//#endregion
+		//#region \0dsh-css:../skin-manager/src/client/feedback-section.module.css.mjs
+		const css = ".y6WBFW_section{flex-direction:column;gap:12px;padding:16px 20px;display:flex}.y6WBFW_desc{font:var(--dsw-font-sm-14);color:var(--dsw-alias-label-secondary);margin:0}.y6WBFW_button{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-button-elevated-fill);color:var(--dsw-alias-label-primary);cursor:pointer;border-radius:8px;align-self:flex-start;padding:6px 18px}.y6WBFW_button:hover{background:var(--dsw-alias-button-floating-hover)}";
+		const tagId = "@dsh-external/dsh-client-ui-skin-deep-whale-manager/feedback-section.module.css";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
+			const tag = document.createElement("style");
+			tag.dataset.plugin = "@dsh-external/dsh-client-ui-skin-deep-whale-manager";
+			tag.dataset.pluginCss = tagId;
+			tag.textContent = css;
+			document.head.appendChild(tag);
+		}
+		var feedback_section_module_css_default = {
+			"button": "y6WBFW_button",
+			"desc": "y6WBFW_desc",
+			"section": "y6WBFW_section"
+		};
+		//#endregion
+		//#region src/client/FeedbackSection.tsx
+		/**
+		* 官方意见反馈问卷入口(2026-10-02 新版迁移):与官方账号菜单的「意见反馈」
+		* 同源 URL(官方包 contact-config.js 取证),按主人要求作为独立设置区块
+		* 与「皮肤管理」「Agent 管理」并列。
+		*/
+		const CONTACT_FORM_URL = "https://trtgsjkv6r.feishu.cn/share/base/form/shrcnlCoGElW7MQznGy9r3YYXcg?hide_uid=1&hide_device_info=1&hide_harness_version=1";
+		function FeedbackSection() {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
+				className: feedback_section_module_css_default.section,
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("p", {
+					className: feedback_section_module_css_default.desc,
+					children: "遇到问题或有建议?填写官方反馈问卷,我们会尽快跟进。"
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
+					type: "button",
+					className: feedback_section_module_css_default.button,
+					onClick: () => {
+						window.open(CONTACT_FORM_URL, "_blank", "noopener");
+					},
+					children: "打开反馈问卷"
+				})]
+			});
 		}
 		//#endregion
 		//#region src/client/schedule.ts
@@ -786,12 +617,6 @@ window.__ModuleLoader__.load({
 		function normalizeSetting(setting, value) {
 			if (setting.type === "boolean") return typeof value === "boolean" ? value : setting.defaultValue;
 			if (setting.type === "select") return typeof value === "string" && setting.options.some((option) => option.value === value) ? value : setting.defaultValue;
-			if (setting.type === "range") {
-				const numeric = typeof value === "number" && Number.isFinite(value) ? value : setting.defaultValue;
-				const min = setting.min;
-				const max = setting.max;
-				return Math.min(max, Math.max(min, numeric));
-			}
 			return normalizeVisibilitySchedule(value, setting.defaultValue);
 		}
 		function normalizeSkinValues(definition, value) {
@@ -968,6 +793,13 @@ window.__ModuleLoader__.load({
 					switchSkin: requestSkinSwitch
 				})
 			}, SkinManager));
+			ctx.slots.inject("settings.section", () => ctx.slots.register({
+				name: "settings.section",
+				id: "dsh-feedback",
+				order: 120,
+				label: "意见反馈",
+				inject: () => ({})
+			}, FeedbackSection));
 		}
 		//#endregion
 		exports.apply = apply;

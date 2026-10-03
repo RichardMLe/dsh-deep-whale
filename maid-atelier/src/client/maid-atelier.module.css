@@ -46,12 +46,15 @@ body[data-dsh-maid-atelier] {
   --dsw-shadow-lv2: var(--maid-shadow);
   --dsw-specific-input-major: rgba(255, 253, 248, 0.82);
   --dsw-specific-selector: rgba(226, 232, 246, 0.9);
-  --dsw-specific-sidebar-fill: rgba(11, 25, 66, 0.88);
+  /* 2026-10-02 新版迁移:不再全局染蓝(旧值 rgba(11,25,66,.88) 会染透官方标题栏条
+     与右侧栏)。深蓝改为只画在 [data-slot='sidebar'](见文末迁移段)。 */
+  --dsw-specific-sidebar-fill: transparent;
 }
 
 body[data-dsh-maid-atelier][data-ds-dark-theme] {
   color: #e5eaf6;
   background-color: #080f27;
+  --maid-ink: #e7ecf7;
   --maid-glass: rgba(13, 25, 59, 0.74);
   --maid-shadow: 0 18px 58px rgba(0, 0, 0, 0.38), 0 2px 10px rgba(0, 0, 0, 0.3);
   --dsw-alias-bg-base: transparent;
@@ -82,7 +85,8 @@ body[data-dsh-maid-atelier][data-ds-dark-theme] {
   --dsw-alias-state-business-tertiary: #293d73;
   --dsw-specific-input-major: rgba(17, 30, 66, 0.88);
   --dsw-specific-selector: rgba(45, 64, 111, 0.9);
-  --dsw-specific-sidebar-fill: rgba(5, 13, 40, 0.9);
+  /* 2026-10-02 新版迁移:同明档,不再全局染蓝。 */
+  --dsw-specific-sidebar-fill: transparent;
 }
 
 body[data-dsh-maid-atelier] [id='root'] {
@@ -95,7 +99,7 @@ body[data-dsh-maid-atelier] [id='root'] {
    (装饰 chrome 0 / 应用 chrome 21 / 角色 -1..1) 与第三方插件对 #root 的
    层叠上下文抬升,保证挂载在 shell.overlay 槽的浮动面板(如文件浏览器)
    在视觉与点击层级上始终位于皮肤之上。 */
-body[data-dsh-maid-atelier] [data-shell-overlay] {
+body[data-dsh-maid-atelier] :is([data-shell-overlay], [data-slot='shell.overlay']) {
   z-index: 1000;
 }
 
@@ -605,13 +609,18 @@ body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-mascot'] {
   object-fit: contain;
   object-position: center bottom;
   pointer-events: none;
-  opacity: 0.92;
+  /* 2026-10-02 主人核验:更透明(0.45 → 0.3,待主人定稿)。 */
+  opacity: 0.3;
   filter:
     saturate(1)
     brightness(1.08)
     contrast(1.04)
     drop-shadow(0 5px 12px rgba(2, 7, 24, 0.24));
   transform: translateX(-50%) translateZ(0);
+}
+
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-skin-chrome='sidebar-mascot'] {
+  opacity: 0.3;
 }
 
 body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol']) {
@@ -761,11 +770,13 @@ body[data-dsh-maid-atelier] [data-maid-sidebar-footer] {
 body[data-dsh-maid-atelier] [data-maid-sidebar-footer]::before {
   content: '';
   position: absolute;
-  /* 下移约一行半文字，使蕾丝饰边底缘贴到下方「设置」按钮上沿 */
-  inset: -64px 0 auto;
+  /* 下移约一行半文字，使蕾丝饰边底缘贴到下方「设置」按钮上沿;
+     2026-10-02:设置按钮回归后与蕾丝重叠——整体上移 10px(-74px)。 */
+  inset: -74px 0 auto;
   z-index: 0;
   height: 72px;
-  background: var(--maid-sidebar-swag-art) center top / 100% 100% no-repeat;
+  /* 2026-10-02:蝴蝶结相对"设置"字样偏左——图样水平右移 7px。 */
+  background: var(--maid-sidebar-swag-art) left calc(50% + 7px) top / 100% 100% no-repeat;
   pointer-events: none;
   filter:
     brightness(1.1)
@@ -2318,9 +2329,31 @@ body[data-dsh-maid-atelier][data-ds-dark-theme]
   color: rgba(174, 189, 222, 0.5);
 }
 
-/* 会话流底部透明遮罩：由 bottom-veil.ts 以滚动锚定的内联 mask-image 实现，
- * 固定罩住「输入框下缘至屏幕底端」这段区域；此处不再放静态规则（静态 mask
- * 只能锚在消息行末尾，不是用户要的位置）。 */
+/* 会话流底部透明遮罩(覆盖条版,2026-09-08 去放大 M2):由 bottom-veil.ts 维护的
+ * 独立 56px 覆盖条,固定罩住「输入框下缘至屏幕底端」这段区域。不再给
+ * [data-chat-flow] 写 mask-image(旧版每帧对整个巨型流做遮罩合成,是超重回合
+ * 流式期间放大官方竞态的放大器);覆盖条内层窗口与舞台同盒对齐(宫殿画作逐像素
+ * 一致),自身渐变 mask 复刻「文字/气泡渐隐、透出画作」的观感。
+ * 宽/左由 bottom-veil.ts 按「转录内容列」宽度内联写入——收窄后左右女仆立绘
+ * 下角不被覆盖条盖住(9-08 反馈)。 */
+body[data-dsh-maid-atelier] [data-skin-chrome='bottom-veil-strip'] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 62%);
+  mask-image: linear-gradient(180deg, transparent, #000 62%);
+}
+
+body[data-dsh-maid-atelier] [data-skin-chrome='bottom-veil-strip'] > div {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--maid-palace-art) center / cover no-repeat;
+}
 
 /* ChatView exposes data-chat-flow in every loading and content state. Give
    Trajectory, Timeline, and other inspect-only views the full canvas while
@@ -3665,6 +3698,36 @@ body[data-dsh-maid-atelier]
   backdrop-filter: blur(6px) saturate(0.9);
 }
 
+/* 设置面板加宽(2026-10-03 主人选定方案 A):官方固定 800px → 960px,
+   内容列 612→772,行标签不再被省略号截断、右侧控件不再贴边。
+   数据:S1 官方规则 _panel{width:800px};真机探针 内容列 612、可用 564。 */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings'] {
+  width: min(960px, calc(100vw - 48px));
+}
+
+/* 设置面板内容净空(2026-10-03 定案):
+   ① 内容列包装层 —— 归零;
+   ② 内容栏 options —— 恢复官方原值(白区外容器上的一切改动已撤销);
+   ③ **白区卡片自身 28px** —— 只打在有自身底色的容器上(chrome-tags.ts 按
+      computed 背景色打 data-maid-settings-card)。此前用 `_section` 通配,
+      把通用设置页那些**没有底色的分组**也算进去,导致"权限"多出约 16px;
+      改为"有底色才加内边距"后,该页恢复原样、模型页等白卡保持 28px。 */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings'] > nav + div {
+  box-sizing: border-box;
+  padding: 0;
+}
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings'] [data-maid-settings-card] {
+  box-sizing: border-box;
+  padding: 28px;
+}
+/* 卡片首个子元素的顶部内边距归零(2026-10-03 探针实测):通用设置页首行
+   (_3HsggG_row)自带 padding:16px 0,叠加卡片 28px → "权限"文字距顶 44px,
+   比其他页首个标题(28px)多出 16px —— 主人反复指出的那 16px 即此。 */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings'] [data-maid-settings-card] > :first-child,
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings'] [data-maid-settings-card] > * > :first-child {
+  padding-top: 0;
+}
+
 body[data-dsh-maid-atelier][data-ds-dark-theme]
   [data-slot='sidebar.settings']
   [role='presentation']
@@ -4063,39 +4126,19 @@ body[data-dsh-maid-atelier] [data-skin-chrome='top-trim'] {
 }
 
 /* Dress the official title-bar row with the sidebar navy so the sidebar
-   reads as starting at the very top of the window. The strip is a vertical
-   gradient, deepest where it meets the sidebar and the trim band, lightening
-   toward the top edge; the gold seam that the trim band repeats below. */
+   reads as starting at the very top of the window.
+   2026-10-02 新版迁移:该规则在新版命中整个窗口顶栏(含"应用/编辑"菜单与
+   最小化/最大化按钮区),导致按钮看不清——按主人要求整块区域保持原样,
+   皮肤不再给标题栏上色(品牌装饰见文末迁移段)。 */
 body[data-dsh-maid-atelier] [class*='titlebar'] {
   position: relative;
-  background: linear-gradient(
-    to top,
-    rgba(9, 19, 51, 0.98) 0%,
-    rgba(13, 29, 70, 0.96) 45%,
-    rgba(22, 43, 97, 0.93) 75%,
-    rgba(31, 56, 118, 0.9) 100%
-  );
-  border-bottom: 1px solid rgba(197, 164, 104, 0.42);
+  background: transparent;
+  border-bottom: none;
 }
 
 body[data-dsh-maid-atelier][data-ds-dark-theme] [class*='titlebar'] {
-  background: linear-gradient(
-    to top,
-    rgba(4, 11, 38, 0.98) 0%,
-    rgba(8, 19, 52, 0.96) 45%,
-    rgba(15, 30, 72, 0.93) 75%,
-    rgba(23, 41, 92, 0.9) 100%
-  );
-  border-bottom-color: rgba(211, 180, 119, 0.5);
-}
-
-body[data-dsh-maid-atelier] [class*='titlebar'] [class*='button'] {
-  color: #d9bd83;
-}
-
-body[data-dsh-maid-atelier] [class*='titlebar'] [class*='button']:hover {
-  color: #f3e3c0;
-  background: rgba(87, 117, 190, 0.28);
+  background: transparent;
+  border-bottom: none;
 }
 @media (prefers-reduced-motion: reduce) {
   body[data-dsh-maid-atelier] [data-maid-session-row] svg[data-state='ongoing'] > rect {
@@ -4265,4 +4308,419 @@ body[data-dsh-maid-atelier]
     opacity: 1;
     transform: none;
   }
+}
+
+/* ============================================================================
+   2026-10-02 新版 DSH(nightly 0.2.0-rc.2)迁移段:官方框架改版后皮肤锚点重锚。
+   稳定锚点 = 槽渲染器注入的 data-slot 属性;类名均为构建哈希,不再可用。
+   ========================================================================== */
+
+/* ① 侧边栏深蓝只画在侧边栏列内(标题栏条/右侧栏不再被 --dsw-specific-sidebar-fill
+   染蓝——token 已在文首改为 transparent)。 */
+body[data-dsh-maid-atelier] [data-slot='sidebar'] {
+  position: relative;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(9, 19, 51, 0.98), rgba(13, 29, 70, 0.94) 45%, rgba(22, 43, 97, 0.92));
+  border-right: 1px solid rgba(197, 164, 104, 0.42);
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-slot='sidebar'] {
+  background: linear-gradient(180deg, rgba(4, 11, 38, 0.98), rgba(8, 19, 52, 0.96) 45%, rgba(15, 30, 72, 0.94));
+  border-right-color: rgba(211, 180, 119, 0.5);
+}
+
+/* ② 收起侧边条:Windows 标题栏模式下官方不显示 railMark,皮肤自绘细条——
+   深蓝底 + 右缘金线 + 底部低调纹章;纯装饰,pointer-events:none 不挡点击。 */
+body[data-dsh-maid-atelier] [data-slot='sidebar']:has([data-sidebar-collapsed='true']) {
+  background: linear-gradient(180deg, rgba(9, 19, 51, 0.96), rgba(16, 32, 77, 0.94));
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-slot='sidebar']:has([data-sidebar-collapsed='true']) {
+  background: linear-gradient(180deg, rgba(4, 11, 38, 0.96), rgba(10, 22, 55, 0.94));
+}
+body[data-dsh-maid-atelier] [data-slot='sidebar']:has([data-sidebar-collapsed='true'])::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-right: 1px solid rgba(211, 180, 119, 0.55);
+  background:
+    radial-gradient(circle at 50% 94%, rgba(197, 164, 104, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(197, 164, 104, 0.08), transparent 34%);
+}
+
+/* ③ 底部按钮:新版 sidebar.footer.action 挂账号"更多"按钮,恢复旧"设置"按钮的
+   金色描框观感(沿用皮肤 settings-frame 图样)。
+   2026-10-02 追加:官方按钮(账号名文案)由皮肤隐藏,皮肤自绘「设置」按钮
+   (data-maid-settings-button,由 settings-button.ts 挂载)承接同一套描框样式;
+   点击皮肤按钮 → 转发官方按钮 → 菜单自动点选「设置」→ 打开设置面板。 */
+body[data-dsh-maid-atelier]
+    [data-maid-sidebar-footer]
+    :is([data-slot='sidebar.footer.action'] > :is(button, [role='button']), [data-maid-settings-button]) {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 50px;
+  padding-inline: 34px;
+  color: #f2dfba;
+  border-style: solid;
+  border-width: 0 34px;
+  border-image-source: var(--maid-settings-frame-art);
+  border-image-slice: 0 220 0 220 fill;
+  border-image-width: 0 34px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  background: none;
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.02em;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 10px rgba(2, 8, 28, 0.26));
+  transition: color 150ms ease, filter 150ms ease, transform 150ms ease;
+}
+body[data-dsh-maid-atelier]
+    [data-maid-sidebar-footer]
+    :is([data-slot='sidebar.footer.action'] > :is(button, [role='button']), [data-maid-settings-button]):is(:hover, :focus-visible) {
+  color: #fff8e8;
+  filter: drop-shadow(0 5px 12px rgba(2, 8, 28, 0.32));
+}
+/* 官方底部按钮隐形(行为保留,由皮肤按钮转发点击)。真实锚 = sidebar.settings
+   (ui-settings-general 注册的 shell store + 设置触发器/账号菜单在此,
+   sidebar.footer.action 是空列表槽);触发器带 aria-haspopup,可能被中间容器包裹。 */
+body[data-dsh-maid-atelier]
+    :is([data-slot='sidebar.settings'], [data-slot='sidebar.footer.action'])
+    :is(button, [role='button'], [aria-haspopup]) {
+  display: none;
+}
+
+/* ⑤ 右侧栏:恢复官方原色(重置皮肤 token 越界)、不透明底保证全屏模式能盖住
+   左侧内容、层级高于皮肤舞台/装饰与全屏遮罩(遮罩 50,右栏 60,官方浮层 1000)。 */
+body[data-dsh-maid-atelier] [data-slot='rightbar'] {
+  position: relative;
+  z-index: 60;
+  --dsw-alias-border-l3: var(--dsw-alias-border-l2);
+  /* 真机反馈:右栏图标外有灰色矩形框——此前把悬停/激活 token 重置成灰蓝,
+     恢复透明(官方原样)。 */
+  --dsw-alias-interactive-bg-active: transparent;
+  --dsw-alias-interactive-bg-hover: transparent;
+  background: rgba(246, 248, 252, 0.99);
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-slot='rightbar'] {
+  background: rgba(11, 18, 43, 0.99);
+}
+
+/* ⑤c 右栏全屏:官方窗格全屏态带 data-sidebar-right-panel='fullscreen',但其底色走
+   皮肤的半透明 token,左侧对话背景与内容会透出——补不透明官方底色。 */
+body[data-dsh-maid-atelier] [data-sidebar-right-panel='fullscreen'] {
+  background: rgba(246, 248, 252, 1);
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-sidebar-right-panel='fullscreen'] {
+  background: rgba(11, 18, 43, 1);
+}
+/* ⑤e 安全网:收起右栏却仍处全屏时,官方全屏覆盖层残留会把左侧盖死(此前造成
+   整窗空白)——收起态不渲染该窗格,左侧完整可用;重开右栏若官方仍记全屏,
+   fullscreen-mask.ts 的自动退全屏会尽力还原普通态。 */
+body[data-dsh-maid-atelier] [data-sidebar-right-panel='fullscreen']:not([data-sidebar-right-open]) {
+  display: none;
+}
+
+/* ⑤d 全屏遮罩(2026-10-02,主人定案):官方全屏覆盖层透明,左侧标签条/输入框/
+   舞台仍透出——皮肤挂一块与右栏同色的遮罩(fullscreen-mask.ts 维护,只镜像
+   官方全屏标记)。标题栏条留出(窗口件永远可点);左缘由 JS 实测侧边栏宽度
+   (侧边栏在官方全屏中保留,遮罩不盖它);层级 50:高于中心列全部内容(含顶部
+   标签条),低于右栏列(60)与官方浮层(1000);纯视觉,pointer-events:none;
+   撤除带 150ms 淡出(去抖防会话切换闪屏)。 */
+body[data-dsh-maid-atelier] [data-maid-fullscreen-mask] {
+  position: fixed;
+  inset: 0;
+  top: var(--dsh-windows-titlebar-height, 40px);
+  /* 39 = 低于官方全屏 dock 层(40),高于中心列全部内容(标签条/输入框):
+     遮罩只垫在窗格之下,右栏内容(层 40)始终浮于其上。 */
+  z-index: 39;
+  pointer-events: none;
+  background: rgba(246, 248, 252, 0.99);
+  opacity: 1;
+  transition: opacity 150ms ease;
+}
+body[data-dsh-maid-atelier] [data-maid-fullscreen-mask][data-maid-mask-hidden] {
+  opacity: 0;
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-maid-fullscreen-mask] {
+  background: rgba(11, 18, 43, 0.99);
+}
+
+/* ③ 附:账号菜单收敛——「退出登录」已存在于设置面板(账号与余额页),
+   菜单内该项由 account-menu.ts 打 data-maid-menu-hidden 标记后隐藏。 */
+body[data-dsh-maid-atelier] [data-maid-menu-hidden] {
+  display: none !important;
+}
+
+/* ⑥ 侧边栏「插件」行收敛(2026-10-02,主人定案):插件管理放设置面板即可
+   (设置分区「插件列表」仍在),侧边栏面板行的插件入口隐藏。
+   行锚点 = 官方 aria-label(面板行无 data 属性)。 */
+body[data-dsh-maid-atelier] [data-slot='sidebar'] :is(button[aria-label='插件'], button[aria-label='Plugins']) {
+  display: none;
+}
+
+/* ⑦ 设置面板观感适配(2026-10-02,主人批准):新增设置分区(账号与余额、Agent 管理、
+   会话日志、子代理、网页搜索等)统一工坊观感。锚点 = 槽出口的 data-slot
+   (settings.launcher=导航项出口,settings.section=各区段出口,由官方槽渲染器注入);
+   若某版官方出口结构不同,规则为惰性(不匹配即无效,不破坏官方)。 */
+body[data-dsh-maid-atelier] [data-slot='settings.launcher'] {
+  border-left: 2px solid rgba(197, 164, 104, 0.28);
+}
+body[data-dsh-maid-atelier] [data-slot='settings.section'] > * {
+  border: 1px solid rgba(71, 91, 145, 0.14);
+  border-radius: 12px;
+  background: var(--maid-glass);
+  box-shadow: 0 6px 18px rgba(15, 30, 72, 0.06);
+}
+body[data-dsh-maid-atelier] [data-slot='settings.section'] > * :is(h1, h2, [role='heading']) {
+  color: var(--maid-ink);
+  border-bottom: 1px solid rgba(197, 164, 104, 0.35);
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-slot='settings.section'] > * :is(h1, h2, [role='heading']) {
+  color: #e7ecf7;
+}
+
+/* ⑧ 收起侧边条(2026-10-02,皮肤自绘):官方折叠态的底色走
+   --dsw-specific-sidebar-fill(皮肤已置透明)故不可见——皮肤自绘细条
+   (rail-strip.ts 按 [data-sidebar-collapsed] 挂载)。两模式:
+   完全隐藏 → body 级固定贴边条(data-maid-rail-fixed);图标轨道 → 列内背景。
+   深蓝底 + 右缘金线 + 纹章;纯装饰,pointer-events:none。 */
+body[data-dsh-maid-atelier] [data-maid-rail-strip] {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  pointer-events: none;
+  /* 2026-10-02:主人要求收起条沿用左侧栏底色 #0a173b。 */
+  background: #0a173b;
+  border-right: 1px solid rgba(211, 180, 119, 0.55);
+  box-shadow: 4px 0 14px rgba(2, 8, 28, 0.22);
+}
+body[data-dsh-maid-atelier] [data-maid-rail-strip][data-maid-rail-fixed] {
+  position: fixed;
+  left: 0;
+  top: var(--dsh-windows-titlebar-height, 40px);
+  bottom: 0;
+  width: 56px;
+  z-index: 1;
+}
+/* 金晕装饰已撤销(2026-10-03 探针实证):sidebarCol 与 railStrip 的 computed
+   底色都是 rgb(10,23,59) ——底色本就一致;色差来自本条金色光晕(底部金色径向
+   光 + 顶部金色渐变覆盖整条 56px),在窄条上把深蓝洗成偏暖偏亮。撤掉后两处
+   肉眼所见即为同一色。 */
+body[data-dsh-maid-atelier] [data-maid-rail-strip]::after {
+  content: none;
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-maid-rail-strip] {
+  background: #0a173b;
+}
+
+/* ⑧ 附:收起条上的皮肤控件(旧皮肤观感:金色描框圆钮)与官方游离"+"的隐藏。 */
+body[data-dsh-maid-atelier] [data-maid-rail-strip] :is([data-maid-rail-toggle], [data-maid-rail-new]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: 10px auto 0;
+  border: 1px solid rgba(211, 180, 119, 0.75);
+  border-radius: 50%;
+  background: rgba(10, 23, 58, 0.85);
+  color: #f2dfba;
+  font: 600 15px/1 Georgia, 'Times New Roman', serif;
+  cursor: pointer;
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+body[data-dsh-maid-atelier] [data-maid-rail-strip] :is([data-maid-rail-toggle], [data-maid-rail-new]):hover {
+  border-color: #e6c77e;
+  color: #fff8e8;
+}
+body[data-dsh-maid-atelier] [data-maid-rail-floating-hidden] {
+  display: none !important;
+}
+
+/* ⑨ 方角修正(2026-10-02,主人反馈):官方内容窗 16px 圆角在透明框架上
+   露出 body 背景的角,且与侧边栏之间出现缝隙——直角 + 去缝。
+   关键教训:该变量由官方在 frame 元素上定义,body 级继承压不过——
+   必须在 frame 上覆写。 */
+body[data-dsh-maid-atelier] {
+  --dsh-windows-content-radius: 0px;
+}
+body[data-dsh-maid-atelier] [class*='frame'] {
+  --dsh-windows-content-radius: 0px;
+}
+body[data-dsh-maid-atelier] [class*='centerCol'] {
+  border-left: none;
+}
+/* ⑨ 附(2026-10-02):收起侧边栏时官方把「应用/编辑」菜单右移 84px
+   (--dsh-windows-menu-start)。主人要求菜单原位不动——`initial` 使变量回到
+   "未定义"状态,消费方 var() 回落值与未收起时完全一致(0px 会与折叠钮重叠,
+   真机已证)。 */
+html[data-windows-titlebar]:has(body[data-dsh-maid-atelier]):has([data-sidebar-collapsed='true']) {
+  --dsh-windows-menu-start: initial;
+}
+
+/* ⑩ 顶部菜单栏的折叠钮与「应用/编辑」同色(官方折叠钮固定于标题栏条)。
+   内联上色由 chrome-tags.ts 完成(最高优先级),此处为回退 + 悬停。 */
+body[data-dsh-maid-atelier] [data-maid-official-toggle] {
+  color: var(--dsw-alias-label-primary);
+  background: transparent;
+}
+body[data-dsh-maid-atelier] [data-maid-official-toggle]:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* ⑪ 官方品牌图标缩小 + 下移;金线框适配;新会话按钮同步下移。 */
+body[data-dsh-maid-atelier] button[class*='brand'] > svg {
+  width: auto;
+  height: 17px;
+  display: block;
+  flex: none;
+}
+body[data-dsh-maid-atelier] [class*='logoRow'] {
+  /* 两条金线分离(真机反馈):品牌框与侧边栏顶饰线错开——整框下移。
+     探针实锤:官方 windows 规则 [data-windows-titlebar] .root .logoRow{margin:0}
+     特异性更高压过我——加 !important 保底(皮肤自有装饰,可接受)。
+     2026-10-02:品牌区整体偏高约 15px——框高 60→45。 */
+  margin-top: 18px !important;
+  min-height: 45px !important;
+}
+
+/* ⑭ 缝隙修正:展开态对话窗与左栏之间的细缝。
+   探针实锤:列与列严丝合缝(280=280,无边无距)——"缝"其实是旧皮肤规则
+   在列右缘的 box-shadow(8px 右投影 + 两道金色内描边)投在对话区上的暗带。
+   背景已涂深蓝,再把投影与内描边清零,边界即干净。 */
+body[data-dsh-maid-atelier] [class*='sidebarCol'] {
+  border-right: none;
+  box-shadow: none;
+  /* 主人核验:恢复原始模组的侧边栏底色 #0a173b(实色,非渐变)。 */
+  background: #0a173b;
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [class*='sidebarCol'] {
+  background: linear-gradient(180deg, rgba(4, 11, 38, 0.98), rgba(8, 19, 52, 0.96) 45%, rgba(15, 30, 72, 0.94));
+}
+/* ⑰ 收起条底色 = 展开态侧边栏**同一个值**(2026-10-03 主人核对):
+   展开态侧栏 = 皮肤给"侧边栏列"画的实色 #0a173b(官方根的 token 已被皮肤置
+   透明,列上那层 > div 是 display:contents 不绘制——上一轮我误当成"实色+叠层",
+   给收起条加了光晕/渐变,反而比展开态更暗、偏黑)。此处两边严格同值。 */
+body[data-dsh-maid-atelier] [data-maid-rail-strip] {
+  background: #0a173b;
+}
+body[data-dsh-maid-atelier][data-ds-dark-theme] [data-maid-rail-strip] {
+  background: linear-gradient(180deg, rgba(4, 11, 38, 0.98), rgba(8, 19, 52, 0.96) 45%, rgba(15, 30, 72, 0.94));
+}
+body[data-dsh-maid-atelier] [class*='centerCol'] {
+  border-left: none;
+}
+/* ⑥ 收起态对话区让出 56px 收起条(纯 CSS,不碰官方内联网格——此前改写内联
+   与官方控制器互搏导致收起错乱,已撤回)。 */
+body[data-dsh-maid-atelier] [data-sidebar-collapsed='true'] [class*='centerCol'] {
+  margin-left: 56px;
+}
+
+/* ⑫ 设置触发器兜底隐藏:官方「设置」按钮(aria-label 或文本,chrome-tags.ts
+   打 data-maid-official-settings)不论挂到哪个槽、因何重渲染复现,一律在
+   侧边栏内隐藏(皮肤自绘按钮带 data-maid-settings-button,不受影响)。 */
+body[data-dsh-maid-atelier] [data-slot='sidebar'] :is(button[aria-label='设置'], button[aria-label='Settings'], [data-maid-official-settings]) {
+  display: none;
+}
+/* ⑫ 附:触发器被隐藏后其包装链残留成灰色长条(真机所见)——整链隐藏。 */
+body[data-dsh-maid-atelier] [data-maid-official-settings-row] {
+  display: none;
+}
+/* ⑬ 侧边栏「插件」行兜底隐藏(打标版)。 */
+body[data-dsh-maid-atelier] [data-slot='sidebar'] :is(button[aria-label='插件'], button[aria-label='Plugins'], [data-maid-panel-plugins]) {
+  display: none;
+}
+
+/* ⑮ 标题栏下沿金线(2026-10-03 主人需求):一条横跨整窗的细金线,把顶部菜单栏
+   与下方内容(右栏底色与菜单栏同色,原先几乎分不出边界)严格分开。
+   - 贯穿整窗(left/right 0),覆盖左栏/中栏/右栏上方;
+   - 不挡点击(pointer-events: none);
+   - z-index 900:高于右栏(含全屏右栏 40/60)与收起条(200),低于官方浮层/弹窗(1000+)。 */
+body[data-dsh-maid-atelier]::after {
+  content: '';
+  position: fixed;
+  top: var(--dsh-windows-titlebar-height, 40px);
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(226, 207, 166, 0.35),
+    var(--maid-gold-soft) 6%,
+    #eed299 50%,
+    var(--maid-gold-soft) 94%,
+    rgba(226, 207, 166, 0.35)
+  );
+  box-shadow: 0 1px 0 rgba(8, 18, 51, 0.28);
+  pointer-events: none;
+  z-index: 900;
+}
+
+/* ⑯ 全屏右栏不得侵占收起条(2026-10-03 主人需求):
+   官方规则 [data-windows-titlebar] .panel[data-sidebar-right-panel=fullscreen]
+   { max-width: calc(100vw - var(--dsh-windows-sidebar-width)) } —— 收起时该变量
+   为 0px,于是全屏右栏铺满整窗、盖住 56px 收起条,浮起的圆钮显得穿帮。
+   修法:收起态把全屏右栏的最大宽度扣掉 56px,右边贴边、左边界让出收起条。
+   (契约:不使用 root 级 :has() 关系选择器——沿用后代选择器。) */
+body[data-dsh-maid-atelier] [data-sidebar-collapsed='true'] [data-sidebar-right-panel='fullscreen'] {
+  max-width: calc(100vw - 56px);
+}
+
+/* ⑱ 设置面板排版规范(2026-10-03 主人裁定):
+   层级 / 字号 / 字重   —— 页面主标题 18/600 · 区块标题 14/600 · 正文 14/400 ·
+   次要说明 12/400 · 行名 14/500 · 小标签 12/400;行高标题 1.4、正文 1.6。
+   官方各页标题原本在 14/16/18/20px 之间跳(见普查表),此处按类名后缀统一。 */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings'] {
+  font-size: 14px;
+}
+/* 页面主标题:页面 section 的首个标题元素(含包裹层一层) */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings']
+  [class*='_section'] > :is([class*='_title'], [class*='_heading']):first-child,
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings']
+  [class*='_section'] > * > :is([class*='_title'], [class*='_heading']):first-child {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+/* 区块标题(权限/内置/自定义等分组) */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings']
+  :is([class*='_groupHead'], [class*='_groupTitle'], [class*='_sectionTitle']) {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+/* 正文段落(引言/说明) */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings']
+  :is([class*='_intro'], [class*='_description'], [class*='_copy']) {
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.6 !important;
+}
+/* 行名(卡片标题、条目名) */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings']
+  :is([class*='_rowName'], [class*='_cardTitle'], [class*='_name']) {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+/* 小标签(提示/脚注/徽标) */
+body[data-dsh-maid-atelier] [role='dialog'][data-shortcut-modal='settings']
+  :is([class*='_hint'], [class*='_notice'], [class*='_tag'], [class*='_caption'], [class*='_fieldLabel']) {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+}
+
+/* ⑲ 全屏右栏时收起条被染色(2026-10-03 主人实测):
+   官方全屏给面板**内容**写的是内联 width:100vw(外层容器虽已被我限制为
+   100vw−56,内层仍铺到最左、盖住收起条)。两道保险:
+   ① 收起态把全屏右栏内容限宽 100%(= 容器宽度);
+   ② 收起条层级提到右栏(40/60)之上(70),海军蓝永远压在最上层。 */
+body[data-dsh-maid-atelier] [data-sidebar-collapsed='true'] [data-sidebar-right-panel='fullscreen'] [data-dockkit-pane],
+body[data-dsh-maid-atelier] [data-sidebar-collapsed='true'] [data-sidebar-right-panel='fullscreen'] [data-dockkit-host] {
+  max-width: 100% !important;
+}
+body[data-dsh-maid-atelier] [data-maid-rail-strip][data-maid-rail-fixed] {
+  z-index: 70;
 }

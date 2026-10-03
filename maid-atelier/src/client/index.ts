@@ -38,6 +38,13 @@ import { installMaidComposerScroll } from './composer-scroll.ts'
 import { installMaidCustomization } from './customization.ts'
 import { installMaidTableCards } from './table-card.ts'
 import { installMaidBottomVeil } from './bottom-veil.ts'
+import { installMaidAccountMenu } from './account-menu.ts'
+import { installMaidFullscreenMask } from './fullscreen-mask.ts'
+import { installMaidSettingsButton } from './settings-button.ts'
+import { installMaidWhaleWidget } from './whale-widget.ts'
+import { installMaidBrandToggle } from './brand-toggle.ts'
+import { installMaidRailStrip } from './rail-strip.ts'
+import { installMaidChromeTags } from './chrome-tags.ts'
 
 const SKIN_TITLE = '深海女仆工坊 · DeepSeek Harness'
 const SKIN_OWNER = 'maid-atelier'
@@ -441,6 +448,13 @@ export function apply(ctx: Context): void {
     disposeMaidComposerCapsule()
     disposeMaidComposerScroll()
     disposeMaidBottomVeil()
+    disposeMaidAccountMenu()
+    disposeMaidFullscreenMask()
+    disposeMaidSettingsButton()
+    disposeMaidWhaleWidget()
+    disposeMaidBrandToggle()
+    disposeMaidRailStrip()
+    disposeMaidChromeTags()
     disposeMaidTableCards()
     if (composerMotionTimer !== undefined) clearTimeout(composerMotionTimer)
     if (viewportResizeTimer !== undefined) clearTimeout(viewportResizeTimer)
@@ -506,11 +520,26 @@ export function apply(ctx: Context): void {
   })
   syncSystemChrome()
   body.dataset.dshMaidAtelier = ''
+  // 安装隔离:单个模块抛错不拖垮整张皮肤(诊断期的模块运行标记已随探针一并移除)。
+  const installGuarded = (_name: string, install: () => () => void): (() => void) => {
+    try {
+      return install()
+    } catch {
+      return () => {}
+    }
+  }
   // Composer presentation modes (skin setting 「输入框显示方式」):
   // capsule collapses the empty unfocused card, scroll fades it on scroll-up.
-  const disposeMaidComposerCapsule = installMaidComposerCapsule(body)
-  const disposeMaidComposerScroll = installMaidComposerScroll(body)
-  const disposeMaidBottomVeil = installMaidBottomVeil(body)
+  const disposeMaidComposerCapsule = installGuarded('composer-capsule', () => installMaidComposerCapsule(body))
+  const disposeMaidComposerScroll = installGuarded('composer-scroll', () => installMaidComposerScroll(body))
+  const disposeMaidBottomVeil = installGuarded('bottom-veil', () => installMaidBottomVeil(body))
+  const disposeMaidAccountMenu = installGuarded('account-menu', () => installMaidAccountMenu(body))
+  const disposeMaidChromeTags = installGuarded('chrome-tags', () => installMaidChromeTags(body))
+  const disposeMaidFullscreenMask = installGuarded('fullscreen-mask', () => installMaidFullscreenMask(body))
+  const disposeMaidSettingsButton = installGuarded('settings-button', () => installMaidSettingsButton(body))
+  const disposeMaidWhaleWidget = installGuarded('whale-widget', () => installMaidWhaleWidget(body))
+  const disposeMaidBrandToggle = installGuarded('brand-toggle', () => installMaidBrandToggle(body))
+  const disposeMaidRailStrip = installGuarded('rail-strip', () => installMaidRailStrip(body))
   disposeMaidTableCards = installMaidTableCards(ctx).dispose
   body.style.setProperty('--maid-top-trim-art', `url(${MAID_ATELIER_TOP_TRIM_TILE})`)
   body.style.setProperty('--maid-bottom-trim-art', `url(${MAID_ATELIER_BOTTOM_TRIM_TILE})`)
@@ -863,8 +892,11 @@ export function apply(ctx: Context): void {
         || (target !== undefined && target.closest(composerSelector) !== null))) {
         composerChanged = true
       }
-      if (appNodes.length > 0 && (appNodes.some(node => nodeTouches(node, CONVERSATION_COLUMN_SELECTOR))
-        || (target !== undefined && target.closest(CONVERSATION_COLUMN_SELECTOR) !== null))) {
+      // 降噪(2026-09-08 去放大 S4):舞台/花边维护只在「会话列元素本身」挂载/替换时
+      // 触发;列内每批行级增删(流式期间每帧大批)不再命中——原先 target.closest(列)
+      // 使列内任何突变都跑一遍列内维护,是流式期间每帧的皮肤侧开销之一。
+      if (appNodes.length > 0 && (appNodes.some(node => node instanceof Element && node.matches(CONVERSATION_COLUMN_SELECTOR))
+        || (target !== undefined && target.matches(CONVERSATION_COLUMN_SELECTOR)))) {
         chatStructureChanged = true
       }
       if (appNodes.some(node => nodeTouches(node, SETTINGS_MASK_SELECTOR))) {

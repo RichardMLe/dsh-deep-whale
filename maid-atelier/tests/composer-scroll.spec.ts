@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { installMaidComposerScroll } from '../src/client/composer-scroll.ts'
 
 const SCROLLPORT_HEIGHT = 300
@@ -12,16 +12,6 @@ interface Fixture {
   seat: HTMLElement
   textarea: HTMLTextAreaElement
   dispose: () => void
-}
-
-function overflowBox(height: number, contentHeight: number): HTMLElement {
-  const box = document.createElement('div')
-  box.style.overflowY = 'auto'
-  Object.defineProperties(box, {
-    clientHeight: { configurable: true, value: height },
-    scrollHeight: { configurable: true, value: contentHeight },
-  })
-  return box
 }
 
 function mount(mode: string = 'scroll'): Fixture {
@@ -44,16 +34,6 @@ function mount(mode: string = 'scroll'): Fixture {
   document.body.append(root)
   document.documentElement.setAttribute(SWITCH, mode)
   return { root, scrollport, seat, textarea, dispose: installMaidComposerScroll(document.body) }
-}
-
-/** Seat 内挂一个溢出的草稿滚动盒（宿主 InputBar 的 capped `.scroll`）。 */
-function mountWithDraft(mode: string = 'scroll'): Fixture & { draft: HTMLElement } {
-  const fixture = mount(mode)
-  const draft = overflowBox(300, 700)
-  fixture.textarea.remove()
-  draft.append(fixture.textarea)
-  fixture.seat.append(draft)
-  return { ...fixture, draft }
 }
 
 function scrollTo(scrollport: HTMLElement, top: number): void {
@@ -153,6 +133,56 @@ describe('maid composer scroll-intent', () => {
     dispose()
   })
 
+  it('keeps the composer visible and focused while typing (PG UP accident)', () => {
+    const { scrollport, seat, textarea, dispose } = mount()
+    textarea.focus()
+
+    // 键盘翻页上滚:焦点在输入框内 → 输入席不隐藏、焦点不被抢走
+    scrollTo(scrollport, 400)
+    scrollTo(scrollport, 200)
+    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
+    expect(document.activeElement).toBe(textarea)
+
+    // 滚轮上滚同理
+    wheel(scrollport, -120)
+    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
+    expect(document.activeElement).toBe(textarea)
+
+    // 失焦后正常语义恢复:上滚隐藏、回底显示
+    textarea.blur()
+    scrollTo(scrollport, 150)
+    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(true)
+    scrollTo(scrollport, SCROLLPORT_CONTENT_HEIGHT - SCROLLPORT_HEIGHT - 8)
+    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
+    dispose()
+  })
+
+  it('swallows Page Up/Page Down while the composer owns focus (PG UP accident)', () => {
+    const { textarea, dispose } = mount()
+
+    const up = new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true })
+    textarea.dispatchEvent(up)
+    expect(up.defaultPrevented).toBe(true)
+
+    const down = new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true })
+    textarea.dispatchEvent(down)
+    expect(down.defaultPrevented).toBe(true)
+    dispose()
+  })
+
+  it('leaves Page keys alone outside the active composer', () => {
+    const { scrollport, dispose } = mount()
+
+    const up = new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true, cancelable: true })
+    scrollport.dispatchEvent(up)
+    expect(up.defaultPrevented).toBe(false)
+
+    const down = new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true })
+    scrollport.dispatchEvent(down)
+    expect(down.defaultPrevented).toBe(false)
+    dispose()
+  })
+
   it('ignores scrollports outside an active conversation root', () => {
     const { root, scrollport, seat, dispose } = mount()
     root.dataset.phase = 'hero'
@@ -177,56 +207,6 @@ describe('maid composer scroll-intent', () => {
     dispose()
     expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
     expect(seat.hasAttribute('data-maid-composer-interactive')).toBe(false)
-  })
-
-  it('wheeling a long draft at its edge never hides the seat', () => {
-    const { scrollport, seat, textarea, dispose } = mountWithDraft()
-    scrollTo(scrollport, 400) // baseline
-
-    // draft scroller at its edge; the host forwards the delta to the transcript
-    textarea.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true }))
-    scrollTo(scrollport, 280) // forwarded transcript scroll within the gesture window
-    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
-    dispose()
-  })
-
-  it('the draft gesture window also covers touchpad inertia tails', () => {
-    const { scrollport, seat, textarea, dispose } = mountWithDraft()
-    scrollTo(scrollport, 400)
-
-    textarea.dispatchEvent(new WheelEvent('wheel', { deltaY: -6, bubbles: true }))
-    scrollTo(scrollport, 280)
-    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
-    dispose()
-  })
-
-  it('transcript scrolling steers the seat again once the draft gesture window closes', async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(1_000_000)
-    try {
-      const { scrollport, seat, textarea, dispose } = mountWithDraft()
-      scrollTo(scrollport, 400)
-
-      textarea.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true }))
-      vi.advanceTimersByTime(250)
-      scrollTo(scrollport, 260) // a real upward transcript scroll, no gesture in flight
-      expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(true)
-      dispose()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('wheel on a short draft (no overflow) still steers by direction', () => {
-    const { scrollport, seat, textarea, dispose } = mount()
-    scrollTo(scrollport, 400)
-
-    textarea.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true }))
-    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(true)
-
-    textarea.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true }))
-    expect(seat.hasAttribute('data-maid-composer-hidden')).toBe(false)
-    dispose()
   })
 
   it('older disposal cannot clear state owned by a repeated activation', () => {

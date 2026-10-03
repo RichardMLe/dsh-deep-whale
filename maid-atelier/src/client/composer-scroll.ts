@@ -28,11 +28,6 @@ const NESTED_SCROLL_SURFACE_SELECTOR = [
 
 const SCROLL_THRESHOLD = 10
 const BOTTOM_THRESHOLD = 24
-// A wheel gesture on the draft scroller may keep scrolling the transcript for
-// a short while afterwards: the host's InputBar forwards the delta once the
-// capped draft box reaches its own edge, so the transcript scroll that follows
-// the gesture is not a "scrolling back through history" intent.
-const SEAT_GESTURE_WINDOW_MS = 200
 
 interface SeatSnapshot {
   hidden: string | null
@@ -93,29 +88,6 @@ function wheelBelongsToNestedSurface(event: WheelEvent, scrollport: HTMLElement)
 }
 
 /**
- * The host composer renders the draft in a capped scroll box
- * (`overflow-y: auto` with `max-height`) inside the seat. A wheel gesture on
- * that box belongs to the draft outright — including once it reaches its edge,
- * where the host forwards the delta to the transcript. Driving the hide state
- * from that forwarded scroll would hide (and blur) the composer whose long
- * draft the user is reading, so such gestures never steer the seat.
- */
-function wheelTargetsSeatDraft(event: WheelEvent): boolean {
-  const target = event.target
-  if (!(target instanceof Element)) return false
-  const seat = target.closest(COMPOSER_SEAT_SELECTOR)
-  if (seat === null) return false
-  for (const candidate of event.composedPath()) {
-    if (candidate === seat) break
-    if (!(candidate instanceof HTMLElement)) continue
-    const style = getComputedStyle(candidate)
-    if (!/(auto|scroll)/.test(style.overflowY)) continue
-    if (candidate.scrollHeight > candidate.clientHeight + 1) return true
-  }
-  return false
-}
-
-/**
  * @param body - skin owning element (document.body) used to reach the
  * document; the switch attribute lives on documentElement.
  */
@@ -153,15 +125,15 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
   // conversation never reacts to its first tear-down style pass.
   const lastTops = new WeakMap<HTMLElement, number>()
 
-  const blurSeat = (seat: HTMLElement): void => {
-    const active = doc.activeElement
-    if (active instanceof HTMLElement && seat.contains(active)) active.blur()
-  }
-
   const hideSeat = (seat: HTMLElement): void => {
     if (!current() || !scrollEnabled(doc)) return
+    // 正在输入(焦点在输入席内)时不隐藏(9-12 PG UP 事故):旧实现滚动上移时
+    // 抢走输入框焦点并隐藏输入席,之后 PG DN 等键失去滚动目标,界面永久卡在
+    // 「内容上移、底部黑行」状态,只能重载。焦点在手 = 用户正在打字,滚动
+    // 不改变输入席显隐。
+    const active = doc.activeElement
+    if (active instanceof HTMLElement && seat.contains(active)) return
     write(seat, INTERACTIVE_ATTRIBUTE, null)
-    blurSeat(seat)
     write(seat, HIDDEN_ATTRIBUTE, '')
   }
 
@@ -175,10 +147,6 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
     if (!scrollEnabled(doc)) write(seat, INTERACTIVE_ATTRIBUTE, null)
   }
 
-  // Timestamp until which transcript scrolls are treated as forwarded draft
-  // gestures (see SEAT_GESTURE_WINDOW_MS) rather than scroll-intent.
-  let seatGestureUntil = 0
-
   const onScroll = (event: Event): void => {
     if (!current() || !scrollEnabled(doc)) return
     const scrollport = event.target
@@ -189,7 +157,6 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
     const top = scrollport.scrollTop
     const previousTop = lastTops.get(scrollport)
     lastTops.set(scrollport, top)
-    if (Date.now() < seatGestureUntil) return
 
     const distanceToBottom = scrollport.scrollHeight - top - scrollport.clientHeight
     if (distanceToBottom <= BOTTOM_THRESHOLD) {
@@ -202,12 +169,6 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
 
   const onWheel = (event: WheelEvent): void => {
     if (!current() || !scrollEnabled(doc)) return
-    // Checked before the delta threshold: touchpad inertia tails emit small
-    // deltas that still chain onto the transcript via the host's forwarding.
-    if (wheelTargetsSeatDraft(event)) {
-      seatGestureUntil = Date.now() + SEAT_GESTURE_WINDOW_MS
-      return
-    }
     if (Math.abs(event.deltaY) <= SCROLL_THRESHOLD) return
 
     for (const candidate of event.composedPath()) {
@@ -241,6 +202,20 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
     })
   }
 
+  // 焦点在输入席内时吞掉翻页键(9-12 PG UP 事故根治):键盘滚动把转录区滚上去后,
+  // 插入符导航语义不保证 PG DN 能把窗口滚回来——界面卡在「内容上移、底部黑行」,
+  // 只能重载。误触翻页键一律不滚动转录区(输入框内正常保留插入符行为);
+  // 想用键盘翻页看历史,先点一下正文区(焦点离开输入席)即可,与未聚焦路径一致。
+  const onKeyDown = (event: KeyboardEvent): void => {
+    if (!current()) return
+    if (event.key !== 'PageUp' && event.key !== 'PageDown') return
+    const target = event.target
+    if (!(target instanceof Element)) return
+    const seat = target.closest<HTMLElement>(COMPOSER_SEAT_SELECTOR)
+    if (seat === null || phaseRootOf(seat)?.dataset.phase !== 'active') return
+    event.preventDefault()
+  }
+
   // Toggling the setting off must immediately restore every seat instead of
   // waiting for the next scroll gesture.
   const stateObserver = new MutationObserver((records) => {
@@ -259,6 +234,7 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
   doc.addEventListener('wheel', onWheel, true)
   doc.addEventListener('focusin', onFocusIn, true)
   doc.addEventListener('focusout', onFocusOut, true)
+  doc.addEventListener('keydown', onKeyDown, true)
 
   return () => {
     stateObserver.disconnect()
@@ -266,6 +242,7 @@ export function installMaidComposerScroll(body: HTMLElement): () => void {
     doc.removeEventListener('wheel', onWheel, true)
     doc.removeEventListener('focusin', onFocusIn, true)
     doc.removeEventListener('focusout', onFocusOut, true)
+    doc.removeEventListener('keydown', onKeyDown, true)
     if (current()) {
       clearSeatStates()
       ownership.originals.clear()

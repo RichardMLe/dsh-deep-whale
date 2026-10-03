@@ -2,6 +2,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { SkinCatalogEntry } from '../contract.ts'
 import { SkinManager, requestSkinSwitch } from './SkinManager.tsx'
+import { FeedbackSection } from './FeedbackSection.tsx'
 import { PreferencesStore } from './preferences.ts'
 import { SkinCustomizationRegistry } from './runtime.ts'
 import './skin-manager.module.css'
@@ -33,4 +34,12 @@ export function apply(ctx: SlotsContext): void {
     label: '皮肤管理',
     inject: () => ({ registry, active: activeSkin, switchSkin: requestSkinSwitch }),
   }, SkinManager))
+  // 2026-10-02 新版迁移:意见反馈迁入设置面板(与皮肤管理并列),入口与官方账号菜单同源 URL。
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'dsh-feedback',
+    order: 120,
+    label: '意见反馈',
+    inject: () => ({}),
+  }, FeedbackSection))
 }

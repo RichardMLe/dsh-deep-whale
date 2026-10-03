@@ -619,7 +619,7 @@ describe('Maid Atelier skin apply', () => {
       .map(match => match[1] ?? '')
       .find(rule => rule.includes("content: ''")) ?? ''
     expect(backingRule).toContain("content: ''")
-    expect(backingRule).toContain('inset: 0 -0.52% -2%')
+    expect(backingRule).toContain('inset: 0 -0.52% -7px')
     expect(backingRule).toContain('background: inherit')
     expect(backingRule).toContain('pointer-events: none')
     // The plate must stay behind in-flow children: the attachments slot is
@@ -775,7 +775,7 @@ describe('Maid Atelier skin apply', () => {
       /body\[data-dsh-maid-atelier\]\[data-maid-sidebar-size='rail'\][^{]+:is\(\[class\*='iconButton'\], \[class\*='searchButton'\]\)[^{]+\{/g,
     )].map(match => match[0] ?? '')
     const centeredSettingsContentRule = CSS.match(
-      /:not\(\[data-maid-sidebar-size='rail'\]\)[\s\S]*?\[data-slot='sidebar\.settings'\][\s\S]*?> :is\(button, \[role='button'\]\)\s*\{([^}]*)\}/s,
+      /body\[data-dsh-maid-atelier\]:not\(\[data-maid-sidebar-size='rail'\]\)\s+\[data-maid-sidebar-footer\][\s\S]*?\[data-slot='sidebar\.settings'\]\s*> :is\(button, \[role='button'\]\)\s*\{([^}]*)\}/s,
     )?.[1] ?? ''
     const centeredSettingsLabelRule = CSS.match(
       /\[data-slot='settings\.trigger'\]\s*\{([^}]*)\}/s,
@@ -877,15 +877,48 @@ describe('Maid Atelier skin apply', () => {
     await fiber.dispose()
   })
 
-  it('dresses the frameless title bar with the sidebar navy gradient', () => {
+  it('keeps the frameless title bar original: no navy gradient, no gold buttons (2026-10-02 新版迁移)', () => {
     const titlebarRule = CSS.match(/\[class\*='titlebar'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
-    expect(titlebarRule).toContain('linear-gradient')
-    // Vertical gradient, deepest at the bottom where it meets the sidebar and
-    // the trim band, lightening toward the top edge.
-    expect(titlebarRule).toContain('to top')
-    expect(titlebarRule).toContain('rgba(197, 164, 104, 0.42)')
-    expect(CSS).toMatch(/\[data-ds-dark-theme\] \[class\*='titlebar'\]\s*\{[^}]*to top/s)
-    expect(CSS).toMatch(/\[class\*='titlebar'\] \[class\*='button'\]\s*\{[^}]*color: #d9bd83/s)
+    expect(titlebarRule).not.toContain('linear-gradient')
+    expect(titlebarRule).toContain('background: transparent')
+    // 深蓝只画在侧边栏列内(新稳定锚点 data-slot='sidebar')
+    expect(CSS).toMatch(/\[data-slot='sidebar'\]\s*\{[^}]*linear-gradient/s)
+    expect(CSS).not.toMatch(/\[class\*='titlebar'\] \[class\*='button'\]\s*\{[^}]*color: #d9bd83/s)
+  })
+
+  it('re-anchors the new-shell surfaces (2026-10-02 迁移契约)', () => {
+    // overlay 提升同时锚定旧属性与新槽
+    expect(CSS).toMatch(/:is\(\[data-shell-overlay\], \[data-slot='shell\.overlay'\]\)\s*\{[^}]*z-index: 1000/s)
+    // 收起侧边条自绘
+    expect(CSS).toMatch(/\[data-slot='sidebar'\]:has\(\[data-sidebar-collapsed='true'\]\)::after\s*\{[^}]*border-right/s)
+    // 右栏重置 + 不透明底(层级 60:高于全屏遮罩 50,低于官方浮层 1000)
+    const rightbarRule = CSS.match(/\[data-slot='rightbar'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
+    expect(rightbarRule).toContain('z-index: 60')
+    expect(rightbarRule).toContain('--dsw-alias-border-l3: var(--dsw-alias-border-l2)')
+    // 底部账号按钮恢复旧设置按钮金色描框(现同时匹配皮肤自绘设置按钮)
+    expect(CSS).toMatch(/:is\(\[data-slot='sidebar\.footer\.action'\] > :is\(button, \[role='button'\]\), \[data-maid-settings-button\]\)\s*\{[^}]*border-image-source: var\(--maid-settings-frame-art\)/s)
+    // 官方底部按钮隐形(真实锚 = sidebar.settings + footer.action,触发器带 aria-haspopup)
+    expect(CSS).toMatch(/:is\(\[data-slot='sidebar\.settings'\], \[data-slot='sidebar\.footer\.action'\]\)\s*:is\(button, \[role='button'\], \[aria-haspopup\]\)\s*\{[^}]*display: none/s)
+    // 菜单项收敛标记样式
+    expect(CSS).toMatch(/\[data-maid-menu-hidden\]\s*\{[^}]*display: none !important/s)
+    // 右栏全屏态补不透明底(官方窗格底色走皮肤半透明 token 会透出左侧内容)
+    expect(CSS).toMatch(/\[data-sidebar-right-panel='fullscreen'\]\s*\{[^}]*background: rgba\(246, 248, 252, 1\)/s)
+    // 安全网:收起却仍全屏时不渲染窗格(防止整窗空白)
+    expect(CSS).toMatch(/\[data-sidebar-right-panel='fullscreen'\]:not\(\[data-sidebar-right-open\]\)\s*\{[^}]*display: none/s)
+    // 全屏遮罩:固定层、标题栏留出、层级 39(低于官方 dock 层 40)、纯视觉
+    expect(CSS).toMatch(/\[data-maid-fullscreen-mask\]\s*\{[^}]*top: var\(--dsh-windows-titlebar-height, 40px\)/s)
+    expect(CSS).toMatch(/\[data-maid-fullscreen-mask\]\s*\{[^}]*z-index: 39/s)
+    expect(CSS).toMatch(/\[data-maid-fullscreen-mask\]\s*\{[^}]*pointer-events: none/s)
+    // ⑥ 侧边栏「插件」行收敛(主人定案:插件管理只留设置面板)
+    expect(CSS).toMatch(/\[data-slot='sidebar'\] :is\(button\[aria-label='插件'\], button\[aria-label='Plugins'\]\)\s*\{[^}]*display: none/s)
+    // ⑦ 设置面板观感适配(新增分区统一工坊观感)
+    expect(CSS).toMatch(/\[data-slot='settings\.section'\] > \*\s*\{[^}]*border-radius: 12px/s)
+    // ⑧ 收起侧边条自绘(官方 56px 轨道底色透明,皮肤补深蓝金线细条;
+    //    挂在侧边栏列内作背景,官方轨道控件浮于其上)
+    expect(CSS).toMatch(/\[data-maid-rail-strip\]\s*\{[^}]*position: absolute/s)
+    expect(CSS).toMatch(/\[data-maid-rail-strip\]\s*\{[^}]*pointer-events: none/s)
+    // 插画更透明(主人核验:0.45)
+    expect(CSS).toMatch(/\[data-skin-chrome='sidebar-mascot'\]\s*\{[^}]*opacity: 0\.3/s)
   })
 
   it('keeps delayed sidebar tooltips out of the rail flex layout', () => {
@@ -905,7 +938,7 @@ describe('Maid Atelier skin apply', () => {
     expect(tooltipCarrierRule).not.toBe('')
     expect(tooltipCarrierRule).toContain('z-index: auto')
     expect(tooltipCarrierRule).not.toContain('position: static')
-    expect(frameRule).toContain('z-index: 4')
+    expect(frameRule).toContain('z-index: 101')
   })
 
   it('paints the sidebar double rule without shrinking the collapsed rail', () => {
@@ -1111,13 +1144,13 @@ describe('Maid Atelier skin apply', () => {
       /:not\(\[data-maid-sidebar-size='rail'\]\)[\s\S]*?\[data-slot='sidebar\.settings'\][\s\S]*?> :is\(button, \[role='button'\]\)\s*\{[^}]*margin-inline: 0/s,
     )
     expect(CSS).toMatch(
-      /\[data-maid-sidebar-footer\]\s*\{[^}]*flex: 0 0 auto[^}]*min-height: calc\(var\(--maid-sidebar-swag-height\) \+ 82px\)/s,
+      /\[data-maid-sidebar-footer\]\s*\{[^}]*flex: 0 0 auto[^}]*padding: 0 18px 22px/s,
     )
     expect(CSS).toMatch(
       /\[data-maid-sidebar-size='rail'\][\s\S]*?\[data-maid-sidebar-footer\]:has\(\[data-cordis-badge\]\)\s*\{[^}]*flex-basis: 100px/s,
     )
     expect(CSS).toMatch(
-      /\[data-maid-cordis-panel-open\][\s\S]*?> :has\(\[data-cordis-panel\]\)\s*\{[^}]*z-index: 40/s,
+      /\[data-maid-cordis-panel-open\][\s\S]*?> :has\(\[data-cordis-panel\]\)\s*\{[^}]*z-index: 100/s,
     )
     expect(CSS).toMatch(/\[data-cordis-badge\]\s*\{[^}]*border: 1px solid[^}]*linear-gradient/s)
     expect(CSS).toMatch(
@@ -1338,7 +1371,7 @@ describe('Maid Atelier skin apply', () => {
       /\[data-composer-card\] textarea\s*\{[^}]*caret-color: #405a99/s,
     )
     expect(CSS).toMatch(
-      /\[data-ds-dark-theme\] \[data-composer-card\] textarea\s*\{[^}]*caret-color: #bcd2ff/s,
+      /\[data-ds-dark-theme\] \[data-composer-card\] textarea\s*\{[^}]*caret-color: #fff/s,
     )
   })
 
@@ -1387,10 +1420,10 @@ describe('Maid Atelier skin apply', () => {
     expect(footRule).toContain('box-sizing: border-box')
     expect(footRule).toContain('position: relative')
     expect(footRule).toContain('flex: 0 0 auto')
-    expect(footRule).toContain('min-height: calc(var(--maid-sidebar-swag-height) + 82px)')
-    expect(footRule).toContain('padding: calc(var(--maid-sidebar-swag-height) + 2px) 18px 22px')
-    expect(swagRule).toContain('height: var(--maid-sidebar-swag-height)')
-    expect(swagRule).toContain('background: var(--maid-sidebar-swag-art) center top / 100% 100% no-repeat')
+    expect(footRule).toContain('margin-top: 8px')
+    expect(footRule).toContain('padding: 0 18px 22px')
+    expect(swagRule).toContain('height: 72px')
+    expect(swagRule).toContain('background: var(--maid-sidebar-swag-art) left calc(50% + 7px) top / 100% 100% no-repeat')
     expect(swagRule).toContain('brightness(1.1)')
   })
 
@@ -1826,7 +1859,8 @@ describe('Maid Atelier skin apply', () => {
     expect(mascotRule).toContain('width: var(--maid-sidebar-mascot-width)')
     expect(mascotRule).toContain('max-height: 38%')
     expect(mascotRule).toContain('z-index: 0')
-    expect(mascotRule).toContain('opacity: 0.92')
+    // 2026-10-02 主人核验:更透明(0.3)
+    expect(mascotRule).toContain('opacity: 0.3')
     expect(mascotRule).toContain('saturate(1)')
     expect(mascotRule).toContain('brightness(1.08)')
   })
@@ -1835,7 +1869,7 @@ describe('Maid Atelier skin apply', () => {
     const topTrimRule = CSS.match(/\[data-skin-chrome='top-trim'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
     const landingTrimRule = CSS.match(/\[data-skin-trim-layer='landing'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
     const workspaceTrimRule = CSS.match(/\[data-skin-trim-layer='workspace'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
-    expect(topTrimRule).toContain('height: 76px')
+    expect(topTrimRule).toContain('height: 110px')
     expect(topTrimRule).toContain('overflow: hidden')
     expect(landingTrimRule).toContain('height: 48px')
     expect(landingTrimRule).toContain('background: var(--maid-top-trim-art) left -2px / auto 51px repeat-x')
@@ -1882,26 +1916,22 @@ describe('Maid Atelier skin apply', () => {
     const trimLayerRule = CSS.match(/\[data-skin-trim-layer\]\s*\{([^}]*)\}/s)?.[1] ?? ''
     const landingTrimRule = CSS.match(/\[data-skin-trim-layer='landing'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
     const workspaceTrimRule = CSS.match(/\[data-skin-trim-layer='workspace'\]\s*\{([^}]*)\}/s)?.[1] ?? ''
-    const activeLandingRule = CSS.match(
-      /\[data-maid-workspace\][\s\S]*?\[data-skin-trim-layer='landing'\]\s*\{([^}]*)\}/s,
-    )?.[1] ?? ''
-    const activeWorkspaceRule = CSS.match(
-      /\[data-maid-workspace\][\s\S]*?\[data-skin-trim-layer='workspace'\]\s*\{([^}]*)\}/s,
-    )?.[1] ?? ''
     expect(trimLayerRule).toContain('transition: transform 520ms')
-    expect(landingTrimRule).toContain('transform: translateY(0)')
-    expect(workspaceTrimRule).toContain('transform: translateY(-100%)')
-    expect(activeLandingRule).toContain('transform: translateY(-100%)')
-    expect(activeWorkspaceRule).toContain('transform: translateY(0)')
+    // 陷阱修复后两层静态可见:landing 下沉 50px,workspace 就位,任何视图切换不再升降。
+    expect(landingTrimRule).toContain('transform: translateY(50px)')
+    expect(workspaceTrimRule).toContain('transform: translateY(0)')
+    expect(CSS).not.toMatch(/\[data-maid-workspace\]\s*\[data-skin-trim-layer='landing'\]/)
+    expect(CSS).not.toMatch(/\[data-maid-workspace\]\s*\[data-skin-trim-layer='workspace'\]/)
   })
 
-  it('keeps the bow on the landing trim and leaves the workspace band plain', () => {
-    const landingBowRule = CSS.match(
-      /\[data-skin-trim-layer='landing'\]::after\s*\{([^}]*)\}/s,
+  it('keeps the bow on the top-trim container and leaves the workspace band plain', () => {
+    // 陷阱修复后蝴蝶结从 landing 层移到 top-trim 容器:任何视图切换都不再掉落。
+    const topBowRule = CSS.match(
+      /\[data-skin-chrome='top-trim'\]::after\s*\{([^}]*)\}/s,
     )?.[1] ?? ''
-    expect(landingBowRule).toContain("content: ''")
-    expect(landingBowRule).toContain('left: calc((100% - 8px) / 2)')
-    expect(landingBowRule).toContain('background: var(--maid-bow-art) center / contain no-repeat')
+    expect(topBowRule).toContain("content: ''")
+    expect(topBowRule).toContain('left: calc((100% - 8px) / 2)')
+    expect(topBowRule).toContain('background: var(--maid-bow-art) center / contain no-repeat')
     expect(CSS).not.toMatch(/\[data-skin-trim-layer='workspace'\]::after/)
   })
 
@@ -2029,7 +2059,7 @@ describe('Maid Atelier skin apply', () => {
     expect(widthRule.sheet!.cssRules[0].cssText).toContain('--maid-sidebar-width: 80px')
     sidebar.remove()
     await flushMutations()
-    expect(widthRule.sheet!.cssRules[0].cssText).toContain('--maid-sidebar-width: 0px')
+    expect(widthRule.sheet!.cssRules[0].cssText).toContain('--maid-sidebar-width: 280px')
     await fiber.dispose()
     expect(document.body.hasAttribute('data-maid-sidebar-compact')).toBe(false)
     expect(document.body.hasAttribute('data-maid-sidebar-size')).toBe(false)
