@@ -552,8 +552,8 @@ body[data-dsh-maid-atelier]
    ① 竖线共同宽度 1px → 0.75px:左线"右边收 0.25"、右线"左边收 0.25"同时达成;
    ② 左线 left 8.5px(左边不动);右线再整体右移 0.25 → right 8.25px;
    ③ 上下横线共用同一宽度 1px(必然等宽、等长)。下方角饰为上方贴图垂直翻转,
-      理论对称解为 bottom 9px;但下方两角阴影补偿(见 [data-skin-corner] 规则)
-      改变了观感,主人分两次目视下移共 0.5 → 最终 **bottom 8.5px**。 */
+      理论对称解为 bottom 9px;下方两角阴影补偿(见 [data-skin-corner] 规则)改变了
+      观感后,主人目视二分逼近:8.75(上侧超)→ 8.5(下侧超)→ **8.6**(上移 0.1)。 */
 body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   --maid-sidebar-frame-line-x: 0.75px;
   --maid-sidebar-frame-line-y: 1px;
@@ -562,7 +562,7 @@ body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   z-index: 101;
   background:
     linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
-    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.5px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
+    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.6px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
     linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat,
     linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat;
   pointer-events: none;
