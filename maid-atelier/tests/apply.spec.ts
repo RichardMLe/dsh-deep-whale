@@ -1436,11 +1436,11 @@ describe('Maid Atelier skin apply', () => {
     )?.[1] ?? ''
     expect(CSS).toContain('--maid-sidebar-corner-art')
     // 2026-10-03 素材实测 + 主人亚像素标定:竖线 0.75px(左右各收 0.25);
-    // 上下横线等宽 1px(共用同一个变量);下线经阴影补偿后按观感取 8.75px。
+    // 上下横线等宽 1px(共用同一个变量);下线经阴影补偿后按观感两次下移共 0.5 → 8.5px。
     expect(frameRule).toContain('--maid-sidebar-frame-line-x: 0.75px')
     expect(frameRule).toContain('--maid-sidebar-frame-line-y: 1px')
     expect(frameRule).toContain('left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
-    expect(frameRule).toContain('left 62px bottom 8.75px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
+    expect(frameRule).toContain('left 62px bottom 8.5px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
     expect(frameRule).toContain('left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
     expect(frameRule).toContain('right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
     expect(cornerRule).toContain('width: 62px')
