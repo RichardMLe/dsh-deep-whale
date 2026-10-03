@@ -1440,7 +1440,7 @@ describe('Maid Atelier skin apply', () => {
     expect(frameRule).toContain('--maid-sidebar-frame-line-x: 0.75px')
     expect(frameRule).toContain('--maid-sidebar-frame-line-y: 1px')
     expect(frameRule).toContain('left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
-    expect(frameRule).toContain('left 62px bottom 8.6px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
+    expect(frameRule).toContain('left 62px bottom 8.7px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
     expect(frameRule).toContain('left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
     expect(frameRule).toContain('right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
     expect(cornerRule).toContain('width: 62px')
