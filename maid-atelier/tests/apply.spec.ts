@@ -1435,14 +1435,14 @@ describe('Maid Atelier skin apply', () => {
       /\[data-skin-chrome='sidebar-corners'\] > \[data-skin-corner\]\s*\{([^}]*)\}/s,
     )?.[1] ?? ''
     expect(CSS).toContain('--maid-sidebar-corner-art')
-    // 2026-10-03 素材实测 + 主人目视校准:线宽 1px;上 9px(吻合)、下/左/右取半像素 8.5px
-    // (先试过 1px 偏移,过头;最终半像素——按观感对齐优先于取整消锯齿)。
-    expect(frameRule).toContain('--maid-sidebar-frame-line-x: 1px')
+    // 2026-10-03 素材实测 + 主人亚像素标定:竖线 0.75px(左右各收 0.25);
+    // 上 9px、下 8.75px(上移 0.25)、左 8.5px、右 8.25px(整体右移 0.25)。
+    expect(frameRule).toContain('--maid-sidebar-frame-line-x: 0.75px')
     expect(frameRule).toContain('--maid-sidebar-frame-line-y: 1px')
     expect(frameRule).toContain('left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
-    expect(frameRule).toContain('left 62px bottom 8.5px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
+    expect(frameRule).toContain('left 62px bottom 8.75px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
     expect(frameRule).toContain('left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
-    expect(frameRule).toContain('right 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
+    expect(frameRule).toContain('right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')
