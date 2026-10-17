@@ -4631,11 +4631,10 @@ body[data-dsh-maid-atelier][data-ds-dark-theme] [data-maid-rail-strip] {
 body[data-dsh-maid-atelier] [class*='centerCol'] {
   border-left: none;
 }
-/* ⑥ 收起态对话区让出 56px 收起条(纯 CSS,不碰官方内联网格——此前改写内联
-   与官方控制器互搏导致收起错乱,已撤回)。 */
-body[data-dsh-maid-atelier] [data-sidebar-collapsed='true'] [class*='centerCol'] {
-  margin-left: 56px;
-}
+/* ⑥ 收起态对话区让位:2026-10-18 并排对比(上游 0.1.8 + 宿主 0.2.1-rc.2)实测,
+   官方收起态**自己就会为 56px 轨道让位**(座位 x=56)。我方此前额外加的
+   margin-left:56px 于是变成"让位再让位",在栏杆与内容之间留下 56px 浅色空隙
+   (实测座位 x=112,注入 margin-left:0 后回到 56)。故删除该规则。 */
 
 /* ⑫ 设置触发器兜底隐藏:官方「设置」按钮(aria-label 或文本,chrome-tags.ts
    打 data-maid-official-settings)不论挂到哪个槽、因何重渲染复现,一律在
