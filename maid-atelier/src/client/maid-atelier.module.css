@@ -214,6 +214,23 @@ body[data-dsh-maid-atelier][data-maid-chat-active]
   opacity: 0.9;
 }
 
+/* 官方整页视图(自动化任务等)里没有对话流,女仆会退回 96%/92% 的大尺寸;
+   这里与对话态一致地收到 64%/62%。判定用**列级** :has()(非 root 级,符合契约):
+   会话列里出现 main 槽的 section 即视为整页视图。 */
+body[data-dsh-maid-atelier]
+  :is([data-pane='conversation'], [class*='centerCol']):has(> [data-slot='main'] > section)
+  [data-maid-character='left'] {
+  height: 64%;
+  opacity: 0.9;
+}
+
+body[data-dsh-maid-atelier]
+  :is([data-pane='conversation'], [class*='centerCol']):has(> [data-slot='main'] > section)
+  :is([data-maid-character='right'], [data-maid-character='vision']) {
+  height: 62%;
+  opacity: 0.9;
+}
+
 @media (max-width: 1080px) {
   body[data-dsh-maid-atelier] [data-maid-character] {
     opacity: 0.74;
@@ -4759,14 +4776,14 @@ body[data-dsh-maid-atelier] [data-maid-rail-strip][data-maid-rail-fixed] {
    token 置成透明),直接落在画作上 → 文字几乎看不清。此处给「会话列 main 槽里的
    section」(官方页面的稳定结构锚点,类名是构建哈希不可依赖)套一张与对话区同语言
    的卡片:瓷白底 + 细金线 + 圆角 + 阴影。
-   - 宽度对齐对话内容列(实测宿主对话列 max-width 913.28px、行盒 908),居中;
-     窗口变窄时自动退到「列宽 - 36px」;
+   - 宽度对齐对话正文列(实测消息行 908;宿主对话列 max-width 913.28 是含内边距的外框),
+     居中;窗口变窄时自动退到「列宽 - 36px」;
    - 上沿对齐对话正文基线 76px(顶部蕾丝饰边之下),不再与顶部连成一片;
    - 下沿留 44px(≈ 两行),与主人要求一致。 */
 body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol'])
   [data-slot='main'] > section {
   box-sizing: border-box;
-  width: min(var(--maid-page-card-width, 913px), calc(100% - 36px));
+  width: min(var(--maid-page-card-width, 908px), calc(100% - 36px));
   height: auto;
   flex: 1 1 auto;
   min-height: 0;
