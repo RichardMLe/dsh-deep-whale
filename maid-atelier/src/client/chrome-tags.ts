@@ -50,6 +50,11 @@ export function installMaidChromeTags(body: HTMLElement): () => void {
       if (label.startsWith('插件') || label.startsWith('Plugins')) {
         btn.setAttribute('data-maid-panel-plugins', '')
       }
+      // 侧边栏「自动化任务」行(宿主 0.2.1 新增):打标后由样式表统一成
+      // 与「工作区」分节标签同色的金色行。
+      if (text === '自动化任务' || text === 'Automation' || text === 'Scheduled tasks') {
+        btn.setAttribute('data-maid-panel-schedule', '')
+      }
     }
   }
 

@@ -4681,6 +4681,21 @@ body[data-dsh-maid-atelier] [data-slot='sidebar'] :is(button[aria-label='插件'
   display: none;
 }
 
+/* ㉑ 侧边栏「自动化任务」行:与「工作区」分节标签一致
+   (实测工作区 sectionLabel:15px/500、金色 rgb(217,189,131)、字距 0.35px、
+   左内边距 4px)。 */
+body[data-dsh-maid-atelier] [data-slot='sidebar'] [data-maid-panel-schedule] {
+  color: rgb(217, 189, 131);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.35px;
+  padding-left: 4px;
+}
+
+body[data-dsh-maid-atelier] [data-slot='sidebar'] [data-maid-panel-schedule] :is(span, svg) {
+  color: inherit;
+}
+
 /* ⑮ 标题栏下沿金线(2026-10-03 主人需求):一条横跨整窗的细金线,把顶部菜单栏
    与下方内容(右栏底色与菜单栏同色,原先几乎分不出边界)严格分开。
    - 贯穿整窗(left/right 0),覆盖左栏/中栏/右栏上方;

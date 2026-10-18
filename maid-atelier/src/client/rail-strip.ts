@@ -30,6 +30,7 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
   let newSessionButton: HTMLButtonElement | undefined
   let workspaceButton: HTMLButtonElement | undefined
   let searchButton: HTMLButtonElement | undefined
+  let scheduleButton: HTMLButtonElement | undefined
   let settingsButton: HTMLButtonElement | undefined
 
   const styleButton = (button: HTMLButtonElement): void => {
@@ -152,7 +153,28 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
       })
       controls.append(newSessionButton)
     }
-    // ③ 新建工程钮:y=142,左缘 11;转发官方「添加工作区」按钮。
+    // ③ 自动化任务钮:y=142,左缘 11;转发官方「自动化任务」行(宿主 0.2.1 新增)。
+    //    图标复用官方那枚时钟 svg(chrome-tags 已打 data-maid-panel-schedule)。
+    if (scheduleButton === undefined) {
+      scheduleButton = doc.createElement('button')
+      scheduleButton.type = 'button'
+      scheduleButton.setAttribute('data-maid-rail-schedule', '')
+      scheduleButton.setAttribute('aria-label', '自动化任务')
+      styleButton(scheduleButton)
+      scheduleButton.style.margin = '0'
+      scheduleButton.style.position = 'absolute'
+      scheduleButton.style.top = '142px'
+      scheduleButton.style.left = '11px'
+      cloneIcon(scheduleButton, '[data-maid-panel-schedule]', '◔')
+      scheduleButton.addEventListener('click', () => {
+        const official = doc.querySelector<HTMLElement>('[data-maid-panel-schedule]')
+          ?? [...doc.querySelectorAll<HTMLElement>('button')]
+            .find(b => (b.textContent ?? '').trim() === '自动化任务')
+        official?.click()
+      })
+      controls.append(scheduleButton)
+    }
+    // ④ 新建工程钮:y=188,左缘 11;转发官方「添加工作区」按钮。
     if (workspaceButton === undefined) {
       workspaceButton = doc.createElement('button')
       workspaceButton.type = 'button'
@@ -161,7 +183,7 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
       styleButton(workspaceButton)
       workspaceButton.style.margin = '0'
       workspaceButton.style.position = 'absolute'
-      workspaceButton.style.top = '142px'
+      workspaceButton.style.top = '188px'
       workspaceButton.style.left = '11px'
       cloneIcon(workspaceButton, "button[aria-label='添加工作区'], button[aria-label^='添加工作区']", '▣')
       workspaceButton.addEventListener('click', () => {
@@ -169,7 +191,7 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
       })
       controls.append(workspaceButton)
     }
-    // ④ 搜索钮:y=188,左缘 11;转发官方「搜索会话」按钮。
+    // ⑤ 搜索钮:y=234,左缘 11;转发官方「搜索会话」按钮。
     if (searchButton === undefined) {
       searchButton = doc.createElement('button')
       searchButton.type = 'button'
@@ -178,7 +200,7 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
       styleButton(searchButton)
       searchButton.style.margin = '0'
       searchButton.style.position = 'absolute'
-      searchButton.style.top = '188px'
+      searchButton.style.top = '234px'
       searchButton.style.left = '11px'
       cloneIcon(searchButton, "button[aria-label='搜索会话'], button[aria-label^='搜索会话']", '⌕')
       searchButton.addEventListener('click', () => {
