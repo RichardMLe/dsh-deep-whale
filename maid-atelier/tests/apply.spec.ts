@@ -1437,17 +1437,15 @@ describe('Maid Atelier skin apply', () => {
       /\[data-skin-chrome='sidebar-corners'\] > \[data-skin-corner\]\s*\{([^}]*)\}/s,
     )?.[1] ?? ''
     expect(CSS).toContain('--maid-sidebar-corner-art')
-    // 2026-10-18 主人方案(第 5 版):切片取自角落贴图的纯直段,沿长度方向**整条拉伸**
-    // (no-repeat,无平铺接缝),缩放比 = 角饰自身的 130/1254;boost 变量控制加粗倍数
-    // (1 = 与角饰严格同比例,1.6 = 视觉重量接近卷草笔画)。
+    // 2026-10-18 主人方案(第 7 版):切片 = 角饰贴图的原始像素裁片,**不做任何拉伸**,
+    // background-size 用「原尺寸 × 130/1254」(与角饰同一映射),按长度方向平铺。
+    // 之前用 calc(100% - 124px) 横向拉伸 → 比例 ≠ 角饰 → 水平线永远对不上。
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-v: url("data:image/png;base64,')
-    expect(frameRule).toContain('--maid-frame-line-boost: 1;')
-    // 两端各内收 62px(与角盒等宽),线不进入角饰区域;水平切片避开小涡卷亮部。
-    expect(frameRule).toContain('left 62px top calc(9.5px - 1.451px * var(--maid-frame-line-boost))')
-    expect(frameRule).toContain('/ calc(100% - 124px) calc(2.903px * var(--maid-frame-line-boost)) no-repeat')
-    expect(frameRule).toContain('left calc(8.65px - 1.607px * var(--maid-frame-line-boost)) top 62px')
-    expect(frameRule).toContain('/ calc(3.317px * var(--maid-frame-line-boost)) calc(100% - 124px) no-repeat')
+    expect(frameRule).toContain('left 62px top 8.049px / 70.494px 2.903px repeat-x')
+    expect(frameRule).toContain('left 62px bottom 8.048px / 70.494px 2.903px repeat-x')
+    expect(frameRule).toContain('left 7.043px top 62px / 3.317px 43.541px repeat-y')
+    expect(frameRule).toContain('right 6.940px top 62px / 3.317px 43.541px repeat-y')
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')
