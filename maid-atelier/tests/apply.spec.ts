@@ -1443,10 +1443,11 @@ describe('Maid Atelier skin apply', () => {
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-v: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-boost: 1;')
+    // 两端各内收 62px(与角盒等宽),线不进入角饰区域;水平切片避开小涡卷亮部。
     expect(frameRule).toContain('left 62px top calc(9.5px - 1.451px * var(--maid-frame-line-boost))')
-    expect(frameRule).toContain('/ 100% calc(2.903px * var(--maid-frame-line-boost)) no-repeat')
+    expect(frameRule).toContain('/ calc(100% - 124px) calc(2.903px * var(--maid-frame-line-boost)) no-repeat')
     expect(frameRule).toContain('left calc(8.65px - 1.607px * var(--maid-frame-line-boost)) top 62px')
-    expect(frameRule).toContain('/ calc(3.317px * var(--maid-frame-line-boost)) 100% no-repeat')
+    expect(frameRule).toContain('/ calc(3.317px * var(--maid-frame-line-boost)) calc(100% - 124px) no-repeat')
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')
