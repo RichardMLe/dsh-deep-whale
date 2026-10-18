@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 /**
  * Maid Atelier skin apply spec — the template contract: the body
  * attribute the stylesheet is scoped on is set on apply and retracted on
@@ -1444,9 +1444,9 @@ describe('Maid Atelier skin apply', () => {
     expect(frameRule).toContain('--maid-frame-line-v-flip: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-h-flip: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
-    expect(frameRule).toContain('left 62px top 7.995px / calc(100% - 124px) 2.903px no-repeat')
+    expect(frameRule).toContain('left 62px top 7.995px / calc(100% - 124px) 3.317px no-repeat')
 
-    expect(frameRule).toContain('var(--maid-frame-line-h-flip) left 62px bottom 8.202px / calc(100% - 124px) 2.903px no-repeat')
+    expect(frameRule).toContain('var(--maid-frame-line-h-flip) left 62px bottom 7.788px / calc(100% - 124px) 3.317px no-repeat')
 
     expect(frameRule).toContain('var(--maid-frame-line-v-flip) left 7.012px top 62px / 3.317px calc(100% - 124px) no-repeat')
 
