@@ -659,6 +659,7 @@ body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
     var(--maid-frame-line-v) left -113.679px top 62px / 130px calc(100% - 124px) no-repeat,
     var(--maid-frame-line-v) right 0.979px top 62px / 130px calc(100% - 124px) no-repeat;
   pointer-events: none;
+}
 
 body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] > [data-skin-corner] {
   position: absolute;
