@@ -1,4 +1,4 @@
-/* Deep-sea maid atelier: a self-contained presentation layer over the stock
+﻿/* Deep-sea maid atelier: a self-contained presentation layer over the stock
    web GUI. The generated palace and character layers are applied separately
    by client/index.ts; this file owns their composition and state motion. */
 
@@ -658,8 +658,8 @@ body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
   inset: 0;
   z-index: 101;
   background:
-    var(--maid-frame-line-h) left 62px top 7.995px / calc(100% - 124px) 3.317px no-repeat,
-    var(--maid-frame-line-h-flip) left 62px bottom 7.788px / calc(100% - 124px) 3.317px no-repeat,
+    var(--maid-frame-line-h) left 62px top 7.891px / calc(100% - 124px) 3.317px no-repeat,
+    var(--maid-frame-line-h-flip) left 62px bottom 7.891px / calc(100% - 124px) 3.317px no-repeat,
     var(--maid-frame-line-v-flip) left 7.012px top 62px / 3.317px calc(100% - 124px) no-repeat,
     var(--maid-frame-line-v) right 7.013px top 62px / 3.317px calc(100% - 124px) no-repeat;
   pointer-events: none;
