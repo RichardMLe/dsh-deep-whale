@@ -1437,14 +1437,15 @@ describe('Maid Atelier skin apply', () => {
       /\[data-skin-chrome='sidebar-corners'\] > \[data-skin-corner\]\s*\{([^}]*)\}/s,
     )?.[1] ?? ''
     expect(CSS).toContain('--maid-sidebar-corner-art')
-    // 2026-10-18 主人方案:直线段改为「角饰切片平铺」——取自角落贴图里现成的那段线
-    // (assets/maid-frame-line-{h,v}-v1.png),位置由角饰几何反推,对齐由构造保证。
+    // 2026-10-18 主人方案:直线段改为「角饰切片平铺」——取自角落贴图里现成的、纯直段
+    // 的那段线(assets/maid-frame-line-{h,v}-v1.png,保持原始像素、按角饰同一比例
+    // 130/1254 由 background-size 缩放,亮度与角饰一致),位置由角饰几何反推。
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-v: url("data:image/png;base64,')
-    expect(frameRule).toContain('var(--maid-frame-line-h) left 62px top 7.219px / auto repeat-x')
-    expect(frameRule).toContain('var(--maid-frame-line-h) left 62px bottom 6.781px / auto repeat-x')
-    expect(frameRule).toContain('var(--maid-frame-line-v) left 5.177px top 62px / auto repeat-y')
-    expect(frameRule).toContain('var(--maid-frame-line-v) right 6.123px top 62px / auto repeat-y')
+    expect(frameRule).toContain('var(--maid-frame-line-h) left 62px top 8.256px / 82.935px 2.695px repeat-x')
+    expect(frameRule).toContain('var(--maid-frame-line-h) left 62px bottom 8.049px / 82.935px 2.695px repeat-x')
+    expect(frameRule).toContain('var(--maid-frame-line-v) left 7.25px top 62px / 2.695px 82.935px repeat-y')
+    expect(frameRule).toContain('var(--maid-frame-line-v) right 7.355px top 62px / 2.695px 82.935px repeat-y')
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')
