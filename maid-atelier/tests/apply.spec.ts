@@ -1437,16 +1437,14 @@ describe('Maid Atelier skin apply', () => {
       /\[data-skin-chrome='sidebar-corners'\] > \[data-skin-corner\]\s*\{([^}]*)\}/s,
     )?.[1] ?? ''
     expect(CSS).toContain('--maid-sidebar-corner-art')
-    // 2026-10-03 素材实测 + 主人亚像素标定:竖线 0.75px(左右各收 0.25);
-    // 上线 1px 已确认吻合;下线位置收敛到 8.65px,且厚度取 0.667px
-    // (= DPR 1.5 下 1 设备像素,渲染恒定对称,消除"上超/下超"相位偏置)。
-    expect(frameRule).toContain('--maid-sidebar-frame-line-x: 0.75px')
-    expect(frameRule).toContain('--maid-sidebar-frame-line-y: 1px')
-    expect(frameRule).toContain('--maid-sidebar-frame-line-y-bottom: 0.667px')
-    expect(frameRule).toContain('left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat')
-    expect(frameRule).toContain('left 62px bottom 8.65px / calc(100% - 124px) var(--maid-sidebar-frame-line-y-bottom) no-repeat')
-    expect(frameRule).toContain('left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
-    expect(frameRule).toContain('right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat')
+    // 2026-10-18 主人方案:直线段改为「角饰切片平铺」——取自角落贴图里现成的那段线
+    // (assets/maid-frame-line-{h,v}-v1.png),位置由角饰几何反推,对齐由构造保证。
+    expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
+    expect(frameRule).toContain('--maid-frame-line-v: url("data:image/png;base64,')
+    expect(frameRule).toContain('var(--maid-frame-line-h) left 62px top 7.219px / auto repeat-x')
+    expect(frameRule).toContain('var(--maid-frame-line-h) left 62px bottom 6.781px / auto repeat-x')
+    expect(frameRule).toContain('var(--maid-frame-line-v) left 5.177px top 62px / auto repeat-y')
+    expect(frameRule).toContain('var(--maid-frame-line-v) right 6.123px top 62px / auto repeat-y')
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')

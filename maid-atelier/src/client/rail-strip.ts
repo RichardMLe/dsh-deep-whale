@@ -12,11 +12,20 @@ const STRIP_ATTR = 'data-maid-rail-strip'
 const STRIP_FIXED_ATTR = 'data-maid-rail-fixed'
 const COLLAPSED_SELECTOR = '[data-sidebar-collapsed]'
 const COLUMN_SELECTOR = "[class*='sidebarCol']"
-const TOGGLE_LABELS = ['打开侧边栏', '收起侧边栏', 'Open sidebar', 'Collapse sidebar']
+// 2026-10-18 回归修复:收起后官方有「打开侧边栏」和「展开侧边栏」两个钮,
+// 前者点不动(实测点击后仍 collapsed);真正能展开的是「展开侧边栏」。
+// 因此转发时按当前状态选标签,而不是固定列表取第一个命中。
+const COLLAPSE_LABELS = ['收起侧边栏', 'Collapse sidebar']
+const EXPAND_LABELS = ['展开侧边栏', 'Expand sidebar', '打开侧边栏', 'Open sidebar']
+const TOGGLE_LABELS = [...EXPAND_LABELS, ...COLLAPSE_LABELS]
 const NEW_SESSION_PREFIXES = ['新会话', '新建会话', 'New Session']
 
 const findButtonByLabel = (doc: Document, prefixes: string[]): HTMLButtonElement | undefined =>
   [...doc.querySelectorAll<HTMLButtonElement>('button[aria-label]')].find(button => {
+    // 2026-10-18 关键修复:必须排除**轨道自绘按钮**——轨道 toggle 自己的
+    // aria-label 就是「展开侧边栏」,不排除就会匹配到自己、点击变成空转,
+    // 表现为"收起来就再也展不开 / 左栏像消失"。
+    if (button.closest('[data-maid-rail-controls]') !== null) return false
     const label = (button.getAttribute('aria-label') ?? '').trim()
     return prefixes.some(p => label.startsWith(p))
   })
@@ -81,6 +90,23 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
     button.textContent = '鲸'
   }
 
+  // 官方图标克隆(与展开态同款图标,观感一致)。提到 install 作用域:
+  // 每秒自愈定时器也要用它补挂缺失的图标。
+  const cloneIcon = (button: HTMLElement, sourceSelector: string, fallback: string): void => {
+    const source = doc.querySelector<HTMLElement>(sourceSelector)
+    const svg = source?.querySelector('svg')
+    if (svg !== null && svg !== undefined) {
+      const clone = svg.cloneNode(true) as SVGSVGElement
+      clone.setAttribute('width', '18')
+      clone.setAttribute('height', '18')
+      clone.style.display = 'block'
+      button.textContent = ''
+      button.append(clone)
+    } else {
+      button.textContent = fallback
+    }
+  }
+
   const buildButtons = (): void => {
     if (controls !== undefined) return
     // 控件独立于条:body 级固定容器,z 高于官方内容,不受条内绘制顺序影响。
@@ -97,21 +123,6 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
     controls.style.zIndex = '200'
     controls.style.pointerEvents = 'none'
     controls.style.display = 'block'
-    // 官方图标克隆(与展开态同款图标,观感一致)
-    const cloneIcon = (button: HTMLElement, sourceSelector: string, fallback: string): void => {
-      const source = doc.querySelector<HTMLElement>(sourceSelector)
-      const svg = source?.querySelector('svg')
-      if (svg !== null && svg !== undefined) {
-        const clone = svg.cloneNode(true) as SVGSVGElement
-        clone.setAttribute('width', '18')
-        clone.setAttribute('height', '18')
-        clone.style.display = 'block'
-        button.textContent = ''
-        button.append(clone)
-      } else {
-        button.textContent = fallback
-      }
-    }
     // ① 品牌徽记 = 折叠/展开按钮(主人规格):与展开态品牌图同高、同垂直位置——
     // 展开态品牌盒绝对 y≈82 → 轨内 y=42;24 高 × 24 宽,左缘 16(中心 x=28)。
     if (toggleButton === undefined) {
@@ -132,7 +143,9 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
       toggleButton.style.left = '11px'
       useWhaleIcon(toggleButton)
       toggleButton.addEventListener('click', () => {
-        findButtonByLabel(doc, TOGGLE_LABELS)?.click()
+        // 按当前折叠状态选目标钮:收起态必须点「展开侧边栏」(「打开侧边栏」无效)。
+        const collapsed = doc.querySelector(COLLAPSED_SELECTOR) !== null
+        findButtonByLabel(doc, collapsed ? EXPAND_LABELS : COLLAPSE_LABELS)?.click()
       })
       controls.append(toggleButton)
     }
@@ -332,6 +345,11 @@ export function installMaidRailStrip(body: HTMLElement): () => void {
     }
     if (toggleButton !== undefined && toggleButton.querySelector('svg') === null && whaleSvgCache !== undefined) {
       useWhaleIcon(toggleButton)
+    }
+    // 2026-10-18 回归修复:自动化任务的时钟图标可能在轨道构建时还没打标
+    // (chrome-tags 晚一拍),于是落了回落符号"◔";此处按秒自愈。
+    if (scheduleButton !== undefined && scheduleButton.querySelector('svg') === null) {
+      cloneIcon(scheduleButton, '[data-maid-panel-schedule]', '◔')
     }
   }
   const floatTimer = setInterval(() => {

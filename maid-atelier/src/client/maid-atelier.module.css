@@ -588,18 +588,24 @@ body[data-dsh-maid-atelier]
       这样渲染恒定对称(1 行满格,或 2 行各半),不再是单侧偏置;且 0.667px
       正与角饰贴图的实测线宽(≈0.73~0.83px)吻合。
       上线已确认吻合,故只给下线单独一个厚度变量,不动上线。 */
+/* 2026-10-18 主人方案(构造级对齐):直线段不再用 CSS 渐变另画,而是从角落花纹里
+   **截取现成的那段线**做平铺切片(assets/maid-frame-line-{h,v}-v1.png,按角饰渲染
+   比例 130/1254 预缩放)。线与角出自同一张贴图,粗细/渐变/端点全部同源,对齐由
+   构造保证,不再依赖数值试凑。
+   位置由角饰几何反推(角盒 62x62、内偏移 1px、贴图 background-size 130px):
+     横线线心 9.5px(切片 83x5,线心距上缘 2.281 → top 7.219 / bottom 6.781)
+     竖线线心 8.65px(切片 6x83,线心距左缘 3.473 → left 5.177 / right 6.123) */
 body[data-dsh-maid-atelier] [data-skin-chrome='sidebar-corners'] {
-  --maid-sidebar-frame-line-x: 0.75px;
-  --maid-sidebar-frame-line-y: 1px;
-  --maid-sidebar-frame-line-y-bottom: 0.667px;
+  --maid-frame-line-h: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFMAAAAFCAYAAAA5ZdDqAAABq0lEQVR42u2UvWpVURCFvzUz95wIIVgIooVNQAvByk47wVYQrOxVfAWx8SlMaycWlpoHELQRS0mVBxD8CQbvzZk9FufkcqONEcEm08ye2TNrrYG9B07sn5nevbh3gyEgYkoNMIyOKeVuBZBqcusqputsTatgsTwNR6LMJveuDovCnYGEBHAgGTGHqSRwUxGQC1N4rLAMkBODB/PFwVKDu+q3CVd785ABwiEXJXdVEAx+VHcEoE5EENGjMPXRE/0afd/V5+9f9jdObaiLWTdvB8YAsbvzbYsySQZVNFImipIESKKgKEACN6qKyppCoxVKGl4wTlaUBLKqbLiL1jRCmEFJUo3gUAhEozJBdsgpybCGPKyqpFbJkFkgZL7kGmFgZC9AVGtCDVkUgJnRWqPaJFKFClwa+SQQmEWhaXYQHur6Hswwd7nN2t7e1+7q5tlzC36wuz8fMmvhMYuTv3l8m73aerD9/NGtt3curl8HTgPngbVws/+wXCZff1G3mtMfYPDLoz2mzlpuiHR3z+1nD29fWD9z89r9p5c+wc6bl08eX7m8effjh/evfwL2CaVQ4o2ANAAAAABJRU5ErkJggg==");
+  --maid-frame-line-v: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAABTCAYAAAC8j3YMAAADkklEQVR42nWVzW9VVRTFf/uce19LeZRKpT4MIcVQEx04MYIDPxrjxOjQoibGhD8AB0xsYICJIAo6BmKCEGxSaPyIHwQCCYKKdUocNDFRCKYpFaSvFN/XOXs7uK/C4x3v4A7uyllr77XXPtdPfDg2tbGSndpQqla++eS96hOb1i1+feHytPvi3MWPPv7s8p3K0EC5t6dEtGAA7vOz138B6F+9fqi/XEaQAOAOH34yB+jp6+kv5RkaFQD36OwrBjC4buCBvJTRaLQKYHQURKCy9uERWjWsWSs0GH1XzSC3pWduzi/QU17jCgDYPf7yI7VGeO632VusLg8WgIjoay9s/mBu7vaVvxaq10QXVgG4mZ8O7KF6Z+zkl99v27Bx42J0eXHCV2u7jk2e3fHDlfrFeq2+JvelFkC2fcf+0dMzSxd278ZpCE00AJCdnlm6YGZeROJLE46IK6jGxsY8oADivZmZALiTU1OFB+1HRIoGBTFAADAkK/l259gq77wCqCJi7RO/ntr33UMV7TNDmiFkmW+fGFg58Ozk+28fFMF6e/tEfF6IHzx2/M2R4eG3xl9/bEspz2/W680eALf3yKWJ2RvV85uf2rJn/vqsR5oewJmZzFz540BG80XMb1rZP7i47K4dPfPjpT6fzz8+vD6vKY3/Tpw793s1iF5dvaJE/fZSIe6cM8DXa0u9dxoNesorCxP1xAm/6+dDFZevGJmtLpKpK8Rl69b46vNPvzM/t3D7xj96Lcu0XEzw/N7xdb359m/PTI+vfXDtrVZslgDckLHv0+Nnjn51+e8j3jPQaqgCuJ37D76xc2J6mxkSQ2ghsfDq0Ok/J81MRDBtBTxZkd2TxQQFwOdZKJIGbuvUVAQMwGIAbYf63rGGEFyIUboA8e7uoDoA51Qy5+4FBCDzWV1DQkMMsBSVKssR7QBUVXCdVEUfgsh9VFK8MhPvu/tAxNQ6GzSAaC0fY0xVFXFm3YC2oloM3YCZ4pb3o6MqufulsyrENJokqIy2h10mWtJdUEQS5RbsCSrTKCQbNENSgGgUpzEhboKmNETEYjDXZXuIQSxZLoZ3oikq2tdVp7umMR1qgJgMtThTS9iuhjOjOyWYiPeJwDmPmkhKw5NcnI5btHOjxP4nJcXck/thqQZVI8G0G/Amuvzp/nXGJ1MiIuKT4pEYLb0GSduX/xbJ5XTJ+KiKWcIrDeokNcEs94p3AvAvAUfEPBeP6tAAAAAASUVORK5CYII=");
   position: absolute;
   inset: 0;
   z-index: 101;
   background:
-    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px top 9px / calc(100% - 124px) var(--maid-sidebar-frame-line-y) no-repeat,
-    linear-gradient(90deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 62px bottom 8.65px / calc(100% - 124px) var(--maid-sidebar-frame-line-y-bottom) no-repeat,
-    linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) left 8.5px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat,
-    linear-gradient(180deg, rgba(238, 210, 153, 0.94), rgba(190, 145, 75, 0.96), rgba(238, 210, 153, 0.94)) right 8.25px top 62px / var(--maid-sidebar-frame-line-x) calc(100% - 124px) no-repeat;
+    var(--maid-frame-line-h) left 62px top 7.219px / auto repeat-x,
+    var(--maid-frame-line-h) left 62px bottom 6.781px / auto repeat-x,
+    var(--maid-frame-line-v) left 5.177px top 62px / auto repeat-y,
+    var(--maid-frame-line-v) right 6.123px top 62px / auto repeat-y;
   pointer-events: none;
 }
 
@@ -4684,12 +4690,34 @@ body[data-dsh-maid-atelier] [data-slot='sidebar'] :is(button[aria-label='插件'
 /* ㉑ 侧边栏「自动化任务」行:与「工作区」分节标签一致
    (实测工作区 sectionLabel:15px/500、金色 rgb(217,189,131)、字距 0.35px、
    左内边距 4px)。 */
+/* ㉑ 侧边栏「自动化任务」行(2026-10-18 主人定稿):与「新会话」同款——
+   金色边框花纹(border-image 同一张 --maid-new-session-art)+ 衬线字体。
+   参数复刻 button[class*='newSession'],仅把左右 border-image 宽度按行高收窄。 */
 body[data-dsh-maid-atelier] [data-slot='sidebar'] [data-maid-panel-schedule] {
-  color: rgb(217, 189, 131);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  color: #152246;
+  border-style: solid;
+  border-width: 0 34px;
+  border-image-source: var(--maid-new-session-art);
+  border-image-slice: 0 210 0 210 fill;
+  border-image-width: 0 34px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  background: none;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.35px;
-  padding-left: 4px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 8px rgba(2, 8, 28, 0.2));
+  transition: filter 150ms ease, transform 150ms ease;
+}
+
+body[data-dsh-maid-atelier] [data-slot='sidebar'] [data-maid-panel-schedule]:hover {
+  filter: brightness(1.06) drop-shadow(0 6px 11px rgba(2, 8, 28, 0.26));
+  transform: translateY(-1px);
 }
 
 body[data-dsh-maid-atelier] [data-slot='sidebar'] [data-maid-panel-schedule] :is(span, svg) {
