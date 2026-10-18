@@ -1441,11 +1441,13 @@ describe('Maid Atelier skin apply', () => {
     // 完全一致(130/1254)。竖切片 1254×100(y500..600,带内只有竖线)→ 渲染 130×10.367,
     // repeat-y;横切片 100×1254(x500..600)→ 渲染 10.367×130,repeat-x。
     expect(frameRule).toContain('--maid-frame-line-v: url("data:image/png;base64,')
+    expect(frameRule).toContain('--maid-frame-line-v-flip: url("data:image/png;base64,')
+    expect(frameRule).toContain('--maid-frame-line-h-flip: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
     expect(frameRule).toContain('left 62px top 0.947px / calc(100% - 124px) 130px no-repeat')
-    expect(frameRule).toContain('left 62px bottom -111.947px / calc(100% - 124px) 130px no-repeat')
-    expect(frameRule).toContain('left -113.679px top 62px / 130px calc(100% - 124px) no-repeat')
-    expect(frameRule).toContain('right 0.979px top 62px / 130px calc(100% - 124px) no-repeat')
+    expect(frameRule).toContain('var(--maid-frame-line-h-flip) left 62px bottom 0.95px / calc(100% - 124px) 130px no-repeat')
+    expect(frameRule).toContain('var(--maid-frame-line-v-flip) left 0.98px top 62px / 130px calc(100% - 124px) no-repeat')
+    expect(frameRule).toContain('var(--maid-frame-line-v) right 0.979px top 62px / 130px calc(100% - 124px) no-repeat')
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')
