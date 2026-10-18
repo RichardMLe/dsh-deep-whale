@@ -1442,7 +1442,7 @@ describe('Maid Atelier skin apply', () => {
     // (1 = 与角饰严格同比例,1.6 = 视觉重量接近卷草笔画)。
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-v: url("data:image/png;base64,')
-    expect(frameRule).toContain('--maid-frame-line-boost: 1;')
+    expect(frameRule).toContain('--maid-frame-line-boost: 1.6;')
     // 两端各内收 62px(与角盒等宽),线不进入角饰区域;水平切片避开小涡卷亮部。
     expect(frameRule).toContain('left 62px top calc(9.5px - 1.451px * var(--maid-frame-line-boost))')
     expect(frameRule).toContain('/ calc(100% - 124px) calc(2.903px * var(--maid-frame-line-boost)) no-repeat')
