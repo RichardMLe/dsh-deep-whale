@@ -1444,10 +1444,14 @@ describe('Maid Atelier skin apply', () => {
     expect(frameRule).toContain('--maid-frame-line-v-flip: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-h-flip: url("data:image/png;base64,')
     expect(frameRule).toContain('--maid-frame-line-h: url("data:image/png;base64,')
-    expect(frameRule).toContain('left 62px top 0.947px / calc(100% - 124px) 130px no-repeat')
-    expect(frameRule).toContain('var(--maid-frame-line-h-flip) left 62px bottom 0.95px / calc(100% - 124px) 130px no-repeat')
-    expect(frameRule).toContain('var(--maid-frame-line-v-flip) left 0.98px top 62px / 130px calc(100% - 124px) no-repeat')
-    expect(frameRule).toContain('var(--maid-frame-line-v) right 0.979px top 62px / 130px calc(100% - 124px) no-repeat')
+    expect(frameRule).toContain('left 62px top 7.995px / calc(100% - 124px) 2.903px no-repeat')
+
+    expect(frameRule).toContain('var(--maid-frame-line-h-flip) left 62px bottom 8.202px / calc(100% - 124px) 2.903px no-repeat')
+
+    expect(frameRule).toContain('var(--maid-frame-line-v-flip) left 7.012px top 62px / 3.317px calc(100% - 124px) no-repeat')
+
+    expect(frameRule).toContain('var(--maid-frame-line-v) right 7.013px top 62px / 3.317px calc(100% - 124px) no-repeat')
+
     expect(cornerRule).toContain('width: 62px')
     expect(cornerRule).toContain('height: 62px')
     expect(cornerRule).toContain('background: var(--maid-sidebar-corner-art) top right / 130px 130px no-repeat')
