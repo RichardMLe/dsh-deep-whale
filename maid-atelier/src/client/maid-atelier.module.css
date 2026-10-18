@@ -113,7 +113,11 @@ body[data-dsh-maid-atelier] :is([data-shell-overlay], [data-slot='shell.overlay'
 body[data-dsh-maid-atelier] [data-skin-chrome='character-stage'] {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  /* 2026-10-18:0 → -1。宿主新增的整页视图(如「自动化任务」)是会话列里的
+     未定位内容,会被 z-index:0 的舞台层整块盖住(页面其实渲染了却看不见)。
+     降到 -1 后落在列内容之下、列自身背景之上;列与祖先都透明,画作照常可见,
+     官方页面与外层内容则自动浮在其上。 */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   contain: strict;

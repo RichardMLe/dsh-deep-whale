@@ -1068,7 +1068,9 @@ describe('Maid Atelier skin apply', () => {
     // column's box), not fixed to the viewport.
     expect(stageRule).toContain('position: absolute')
     expect(stageRule).toContain('inset: 0')
-    expect(stageRule).toContain('z-index: 0')
+    // 2026-10-18:0 → -1 —— 官方整页视图(如自动化任务)是列内未定位内容,
+    // 会被 z-index:0 的舞台层盖住;降到 -1 后官方页面自动浮在其上。
+    expect(stageRule).toContain('z-index: -1')
     expect(stageRule).toContain('contain: strict')
     // cover + center: wide chat crops the vertical overflow centered (top and
     // bottom together); a chat narrower than the art keeps it full-height and
