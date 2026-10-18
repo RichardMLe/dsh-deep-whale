@@ -136,6 +136,12 @@ body[data-dsh-maid-atelier] [data-skin-chrome='character-stage'] {
    page-level tier. */
 body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol']) {
   position: relative;
+  /* 2026-10-18 主人反馈:焦点在输入框时按 PageUp/PageDown 会把整窗内容滚走且无法还原。
+     实测:官方给会话列 overflow:hidden,而该值**仍然建立可滚动区域**(键盘可滚);
+     皮肤底部饰边在会话激活时 translateY(100%) 滑出 60px,正好把列撑出 60px 溢出
+     (scrollHeight 1079 / clientHeight 1019),按键就滚这 60px。
+     overflow:clip 视觉上同样裁切,但不建立滚动容器 —— 彻底消除该路径。 */
+  overflow: clip;
 }
 
 /* The ConversationRoot is the column's in-flow content. `position: relative`
@@ -145,6 +151,9 @@ body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol']
 body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol'])
   :is([data-phase='hero'], [data-phase='active'], [data-phase='settling']) {
   position: relative;
+  /* 同上:会话根里底部遮罩高出宿主 5px(VEIL_EXTRA_V/2 的观感微调),也会让该层
+     变成可滚动区;同样用 clip 关掉滚动容器语义。 */
+  overflow: clip;
 }
 
 body[data-dsh-maid-atelier] [data-maid-character] {
