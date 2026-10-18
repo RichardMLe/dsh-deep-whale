@@ -4759,16 +4759,18 @@ body[data-dsh-maid-atelier] [data-maid-rail-strip][data-maid-rail-fixed] {
    token 置成透明),直接落在画作上 → 文字几乎看不清。此处给「会话列 main 槽里的
    section」(官方页面的稳定结构锚点,类名是构建哈希不可依赖)套一张与对话区同语言
    的卡片:瓷白底 + 细金线 + 圆角 + 阴影。
+   - 宽度对齐对话内容列(实测宿主对话列 max-width 913.28px、行盒 908),居中;
+     窗口变窄时自动退到「列宽 - 36px」;
    - 上沿对齐对话正文基线 76px(顶部蕾丝饰边之下),不再与顶部连成一片;
    - 下沿留 44px(≈ 两行),与主人要求一致。 */
 body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol'])
   [data-slot='main'] > section {
   box-sizing: border-box;
-  width: auto;
+  width: min(var(--maid-page-card-width, 913px), calc(100% - 36px));
   height: auto;
   flex: 1 1 auto;
   min-height: 0;
-  margin: 76px 18px 44px;
+  margin: 76px auto 44px;
   border: 1px solid rgba(178, 132, 66, 0.85);
   border-radius: 16px;
   background: rgba(253, 252, 249, 0.975);
