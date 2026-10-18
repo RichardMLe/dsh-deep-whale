@@ -4753,3 +4753,39 @@ body[data-dsh-maid-atelier] [data-sidebar-collapsed='true'] [data-sidebar-right-
 body[data-dsh-maid-atelier] [data-maid-rail-strip][data-maid-rail-fixed] {
   z-index: 70;
 }
+
+/* ⑳ 官方整页视图(自动化任务等)的卡片化(2026-10-18 主人需求):
+   宿主这类页面按纯白底设计(background: var(--dsw-alias-bg-base),而皮肤把这个
+   token 置成透明),直接落在画作上 → 文字几乎看不清。此处给「会话列 main 槽里的
+   section」(官方页面的稳定结构锚点,类名是构建哈希不可依赖)套一张与对话区同语言
+   的卡片:瓷白底 + 细金线 + 圆角 + 阴影。
+   - 上沿对齐对话正文基线 76px(顶部蕾丝饰边之下),不再与顶部连成一片;
+   - 下沿留 44px(≈ 两行),与主人要求一致。 */
+body[data-dsh-maid-atelier] :is([data-pane='conversation'], [class*='centerCol'])
+  [data-slot='main'] > section {
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 76px 18px 44px;
+  border: 1px solid rgba(178, 132, 66, 0.85);
+  border-radius: 16px;
+  background: rgba(253, 252, 249, 0.975);
+  box-shadow:
+    0 16px 40px rgba(18, 30, 62, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 0 0 26px rgba(197, 164, 104, 0.08);
+  overflow: hidden;
+}
+
+body[data-dsh-maid-atelier][data-ds-dark-theme]
+  :is([data-pane='conversation'], [class*='centerCol'])
+  [data-slot='main'] > section {
+  background: rgba(13, 20, 44, 0.94);
+  border-color: rgba(197, 164, 104, 0.5);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 26px rgba(197, 164, 104, 0.06);
+}
