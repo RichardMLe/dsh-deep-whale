@@ -23,6 +23,11 @@ const VEIL_EXTRA_V = 10
 // 对话⇄轨迹切换即靠它卸载/重挂遮罩;流式期间突变连续,计时器被不断推迟,
 // 复查只在突变停歇后发生一次(S3 语义不变)。
 const VEIL_RECHECK_MS = 200
+// 尺寸变化追加复查(2026-10-18 主人反馈:窗口放大缩小时遮罩会错误/偶尔失效)。
+// 宿主自身在窗口尺寸变化后还有一段布局防抖(index 的 VIEWPORT_RESIZE_SETTLE_MS
+// =120ms),我方若只在 resize 事件的当帧量一次,量到的是**过渡态**几何;
+// 因此在 resize 后再补一次静置复查,拿到宿主稳定后的盒子。
+const VEIL_RESIZE_SETTLE_MS = 180
 
 /** 流是否真的在渲染:display:none/未布局 → false(jsdom 无布局,由测试 mock)。 */
 function flowRendered(flow: HTMLElement): boolean {
@@ -39,9 +44,13 @@ export function installMaidBottomVeil(body: HTMLElement): () => void {
   let stripInner: HTMLDivElement | null = null
   let appliedHost: HTMLElement | null = null
   let resizeObserver: ResizeObserver | null = null
+  let observedScroller: HTMLElement | null = null
+  let observedHost: HTMLElement | null = null
+  let observedColumn: HTMLElement | null = null
   let mutationObserver: MutationObserver | null = null
   let recheckTimer: ReturnType<typeof setTimeout> | null = null
   let widthRetryTimer: ReturnType<typeof setTimeout> | null = null
+  let resizeSettleTimer: ReturnType<typeof setTimeout> | null = null
 
   const removeStrip = (): void => {
     strip?.remove()
@@ -82,6 +91,13 @@ export function installMaidBottomVeil(body: HTMLElement): () => void {
 
     const scrollerRect = scroller.getBoundingClientRect()
     const hostRect = host.getBoundingClientRect()
+    // 退化尺寸守卫(2026-10-18):窗口缩放/视图切换的过渡帧里宿主可能量到 0,
+    // 此时写几何会把覆盖条压成一条线或挪到屏外,且后续没有触发器纠正。
+    // 跳过写入,保留上一次有效几何,等 resize 静置复查再算。
+    if (hostRect.width < 8 || hostRect.height < 8) {
+      appliedHost = host
+      return
+    }
     // 覆盖条 = 滚动视口底部 56px(宿主坐标)。位置只随布局变化,与滚动无关。
     // 上下各加宽 VEIL_EXTRA_V/2:上沿上移、总高增加。
     const top = Math.max(0, scrollerRect.bottom - hostRect.top - VEIL_HEIGHT - VEIL_EXTRA_V / 2)
@@ -146,10 +162,20 @@ export function installMaidBottomVeil(body: HTMLElement): () => void {
     }
     appliedHost = host
 
-    if (resizeObserver === null && typeof ResizeObserver !== 'undefined') {
+    // 观察器重建(2026-10-18):此前只建一次并绑死首个 scroller/host,宿主换节点后
+    // 新元素不再被观察,窗口尺寸变化也就收不到信号。改为按当前目标重建,
+    // 并额外观察会话列(侧栏展开/收起会改变列宽,但 scroller 的盒子未必变)。
+    const column = scroller.closest<HTMLElement>(COLUMN_SELECTOR) ?? host
+    if (typeof ResizeObserver !== 'undefined'
+      && (resizeObserver === null || observedScroller !== scroller || observedHost !== host || observedColumn !== column)) {
+      resizeObserver?.disconnect()
       resizeObserver = new ResizeObserver(() => apply())
       resizeObserver.observe(scroller)
       resizeObserver.observe(host)
+      if (column !== host) resizeObserver.observe(column)
+      observedScroller = scroller
+      observedHost = host
+      observedColumn = column
     }
   }
 
@@ -157,8 +183,15 @@ export function installMaidBottomVeil(body: HTMLElement): () => void {
 
   const onViewportResize = (): void => {
     apply()
+    // 宿主布局防抖(≈120ms)之后补一次静置复查,取稳定后的盒子。
+    if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer)
+    resizeSettleTimer = setTimeout(() => {
+      resizeSettleTimer = null
+      apply()
+    }, VEIL_RESIZE_SETTLE_MS)
   }
   window.addEventListener('resize', onViewportResize)
+  window.visualViewport?.addEventListener('resize', onViewportResize)
 
   // 静默复查(9-12):宿主内突变被跳过时排定一次;流式期间的连续突变不断推迟它,
   // 停歇 200ms 后才真正执行——对话⇄轨迹切换(chat-flow 卸载/重挂)由此收敛。
@@ -207,8 +240,14 @@ export function installMaidBottomVeil(body: HTMLElement): () => void {
     recheckTimer = null
     if (widthRetryTimer !== null) clearTimeout(widthRetryTimer)
     widthRetryTimer = null
+    if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer)
+    resizeSettleTimer = null
     window.removeEventListener('resize', onViewportResize)
+    window.visualViewport?.removeEventListener('resize', onViewportResize)
     resizeObserver?.disconnect()
+    observedScroller = null
+    observedHost = null
+    observedColumn = null
     mutationObserver?.disconnect()
     removeStrip()
   }

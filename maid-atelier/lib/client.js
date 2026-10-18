@@ -1007,6 +1007,7 @@ window.__ModuleLoader__.load({
 		const VEIL_EXTRA_H = 10;
 		const VEIL_EXTRA_V = 10;
 		const VEIL_RECHECK_MS = 200;
+		const VEIL_RESIZE_SETTLE_MS = 180;
 		/** 流是否真的在渲染:display:none/未布局 → false(jsdom 无布局,由测试 mock)。 */
 		function flowRendered(flow) {
 			try {
@@ -1021,9 +1022,13 @@ window.__ModuleLoader__.load({
 			let stripInner = null;
 			let appliedHost = null;
 			let resizeObserver = null;
+			let observedScroller = null;
+			let observedHost = null;
+			let observedColumn = null;
 			let mutationObserver = null;
 			let recheckTimer = null;
 			let widthRetryTimer = null;
+			let resizeSettleTimer = null;
 			const removeStrip = () => {
 				strip?.remove();
 				strip = null;
@@ -1053,6 +1058,10 @@ window.__ModuleLoader__.load({
 				if (strip.parentElement !== host) host.append(strip);
 				const scrollerRect = scroller.getBoundingClientRect();
 				const hostRect = host.getBoundingClientRect();
+				if (hostRect.width < 8 || hostRect.height < 8) {
+					appliedHost = host;
+					return;
+				}
 				const top = Math.max(0, scrollerRect.bottom - hostRect.top - VEIL_HEIGHT - VEIL_EXTRA_V / 2);
 				if (strip.style.top !== `${top}px`) strip.style.top = `${top}px`;
 				strip.style.height = `66px`;
@@ -1103,17 +1112,29 @@ window.__ModuleLoader__.load({
 					stripInner.style.height = `${innerHeight}px`;
 				}
 				appliedHost = host;
-				if (resizeObserver === null && typeof ResizeObserver !== "undefined") {
+				const column = scroller.closest(COLUMN_SELECTOR$1) ?? host;
+				if (typeof ResizeObserver !== "undefined" && (resizeObserver === null || observedScroller !== scroller || observedHost !== host || observedColumn !== column)) {
+					resizeObserver?.disconnect();
 					resizeObserver = new ResizeObserver(() => apply());
 					resizeObserver.observe(scroller);
 					resizeObserver.observe(host);
+					if (column !== host) resizeObserver.observe(column);
+					observedScroller = scroller;
+					observedHost = host;
+					observedColumn = column;
 				}
 			};
 			apply();
 			const onViewportResize = () => {
 				apply();
+				if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
+				resizeSettleTimer = setTimeout(() => {
+					resizeSettleTimer = null;
+					apply();
+				}, VEIL_RESIZE_SETTLE_MS);
 			};
 			window.addEventListener("resize", onViewportResize);
+			window.visualViewport?.addEventListener("resize", onViewportResize);
 			const scheduleRecheck = () => {
 				if (recheckTimer !== null) return;
 				recheckTimer = setTimeout(() => {
@@ -1153,8 +1174,14 @@ window.__ModuleLoader__.load({
 				recheckTimer = null;
 				if (widthRetryTimer !== null) clearTimeout(widthRetryTimer);
 				widthRetryTimer = null;
+				if (resizeSettleTimer !== null) clearTimeout(resizeSettleTimer);
+				resizeSettleTimer = null;
 				window.removeEventListener("resize", onViewportResize);
+				window.visualViewport?.removeEventListener("resize", onViewportResize);
 				resizeObserver?.disconnect();
+				observedScroller = null;
+				observedHost = null;
+				observedColumn = null;
 				mutationObserver?.disconnect();
 				removeStrip();
 			};
